@@ -6,8 +6,8 @@ import docker
 import pytest
 
 from breba_docs.analyzer.service import execute_detach, execute_command
-from breba_docs.socket_server.listener import PORT
 from breba_docs.socket_server.send import connect_to_server, send_message_to_server
+from breba_docs.socket_server.listener import PORT
 
 
 @pytest.fixture

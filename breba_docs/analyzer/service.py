@@ -4,6 +4,21 @@ from breba_docs.services.agent import Agent
 from docker.models.containers import Container
 
 
+def execute_detach(command, container):
+    # this command will be able to run any command regardless of quote use
+    docker_command = f"/bin/bash -c {shlex.quote(command.strip())}"
+
+    exit_code, output = container.exec_run(
+        docker_command,
+        stdout=True,
+        stderr=True,
+        tty=True,
+        stream=True,
+    )
+
+    return output
+
+
 def execute_command(command, container):
     # this command will be able to run any command regardless of quote use
     docker_command = f"/bin/bash -c {shlex.quote(command.strip())}"

@@ -6,7 +6,7 @@ import docker
 import pytest
 
 from breba_docs.analyzer.service import execute_detach, execute_command
-from breba_docs.socket_server.send import connect_to_server, send_message_to_server
+from breba_docs.socket_server.client import Client
 from breba_docs.socket_server.listener import PORT
 
 
@@ -50,18 +50,18 @@ def test_execute_command(container):
     # TODO: Needs to work without sleep anywhere in this code. Here We wait for listener to start up.
     #  Connect to server should wait for server to come up
     time.sleep(2)
-    address = ("127.0.0.1", PORT)
-    with connect_to_server(address) as server:
+    client = Client(("127.0.0.1", PORT))
+    with client:
         command = {"command": 'pip uninstall pexpect'}
-        send_message_to_server(server, json.dumps(command))
+        client.send_message(json.dumps(command))
         # TODO: Need to avoid this sleep. Here we wait for reading the first command to finish. Otherwise it won't
         #  parse json correctly. Can be fixed if wait for a response before sending another command
         time.sleep(2)
         command = {"input": 'Y'}
-        send_message_to_server(server, json.dumps(command))
+        client.send_message(json.dumps(command))
         time.sleep(1)
         command = {"command": 'quit'}
-        send_message_to_server(server, json.dumps(command))
+        client.send_message(json.dumps(command))
 
     # TODO: get rid of this sleep. Here we are waiting because the listener.py never exists on quit command.
     #  It needs to throw an exception within the task in order to stop all tasks and quit. T

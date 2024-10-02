@@ -31,12 +31,34 @@ class Client:
                 print(f"Error closing socket: {e}")
             self.client_socket = None
 
+    def read_response(self):
+        """Read data from the server every 3 seconds until no more data is received."""
+        data_received = []
+        self.client_socket.settimeout(3)  # Set a timeout for the socket
+
+        try:
+            while True:
+                time.sleep(2)  # Wait before reading the next chunk
+                data = self.client_socket.recv(4096)
+                if data:
+                    data_received.append(data.decode())
+                    print("Received data chunk")
+                else:
+                    break
+        except socket.timeout:
+            print("No more data received (socket timeout).")
+        except socket.error as e:
+            print(f"Error reading from socket: {e}")
+
+        return ''.join(data_received)
+
     def send_message(self, message):
         """Send a message to the server."""
         if self.client_socket:
             try:
                 print(f"Sending: {message}")
                 self.client_socket.sendall(message.encode())
+                return self.read_response()
             except socket.error as e:
                 print(f"Error sending message: {e}")
         else:

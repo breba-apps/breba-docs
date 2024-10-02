@@ -46,27 +46,19 @@ def container():
 def test_execute_command(container):
     execute_command("pip install pexpect", container)
     command = 'python socket_server/listener.py'
-    output = execute_detach(command, container)
+    execute_detach(command, container)
     # TODO: Needs to work without sleep anywhere in this code. Here We wait for listener to start up.
     #  Connect to server should wait for server to come up
     time.sleep(2)
     client = Client(("127.0.0.1", PORT))
+    response = ""
     with client:
         command = {"command": 'pip uninstall pexpect'}
-        client.send_message(json.dumps(command))
-        # TODO: Need to avoid this sleep. Here we wait for reading the first command to finish. Otherwise it won't
-        #  parse json correctly. Can be fixed if wait for a response before sending another command
-        time.sleep(2)
+        response = client.send_message(json.dumps(command))
         command = {"input": 'Y'}
-        client.send_message(json.dumps(command))
-        time.sleep(1)
+        response = ''.join([response, client.send_message(json.dumps(command))])
         command = {"command": 'quit'}
-        client.send_message(json.dumps(command))
-
-    # TODO: get rid of this sleep. Here we are waiting because the listener.py never exists on quit command.
-    #  It needs to throw an exception within the task in order to stop all tasks and quit. T
-    #  hen we can use `for line in output`
-    time.sleep(3)
-    output_text = next(iter(output))
-    output_text = output_text.decode("utf-8")
-    assert "Server Closed" in output_text
+        response = ''.join([response, client.send_message(json.dumps(command))])
+    assert "Server Closed" in response
+    assert "Proceed (Y/n)" in response
+    assert "Successfully uninstalled" in response

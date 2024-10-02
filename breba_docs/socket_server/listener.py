@@ -11,6 +11,9 @@ async def handle_client(reader: StreamReader, writer: StreamWriter, process, ser
     client_address = writer.get_extra_info('peername')
     print(f"Connection from {client_address}")
 
+    # This will start executing the task. We will await it at the end to make sure that it has finished
+    output_task = asyncio.create_task(read_output(process, writer))
+
     while True:
         data = await reader.read(1024)
         if not data:
@@ -32,6 +35,12 @@ async def handle_client(reader: StreamReader, writer: StreamWriter, process, ser
         if input_text:
             process.sendline(input_text)
 
+    output_task.cancel()
+
+    writer.write("Server Closed".encode())
+    await writer.drain()
+
+
     writer.close()
     await writer.wait_closed()
 
@@ -40,12 +49,14 @@ async def handle_client(reader: StreamReader, writer: StreamWriter, process, ser
     print("Server Closed")
 
 
-async def read_output(process):
+async def read_output(process, writer: StreamWriter):
     while True:
         try:
             output = process.read_nonblocking(1024, timeout=1)
             if output:
                 print(output.strip())
+                writer.write(output.strip().encode())
+                await writer.drain()
         except pexpect.exceptions.TIMEOUT:
             await asyncio.sleep(0.1)
         except pexpect.exceptions.EOF as e:
@@ -67,9 +78,7 @@ async def run():
     process = pexpect.spawn('/bin/bash', encoding='utf-8', env={"PS1": ""})
 
     try:
-        async with asyncio.TaskGroup() as tg:
-            tg.create_task(start_server(process))
-            tg.create_task(read_output(process))
+        await asyncio.create_task(start_server(process))
     except asyncio.CancelledError:
         print("Server shutdown detected. Cleaning up...")
 

@@ -34,13 +34,18 @@ class Client:
     def read_response(self):
         """Read data from the server every 3 seconds until no more data is received."""
         data_received = []
-        self.client_socket.settimeout(3)  # Set a timeout for the socket
+        # Timeout will be hit when the command finished and is no longer sending messages.
+        # Since the server is sending a Completion message, we could finish reading on that.
+        self.client_socket.settimeout(2)  # Set a timeout for the socket
 
         try:
             while True:
-                time.sleep(2)  # Wait before reading the next chunk
-                data = self.client_socket.recv(4096)
+                data = self.client_socket.recv(16384)
                 if data:
+                    # decode breaks when partial utf-8 char is received.
+                    # this happens because utf-8 can be uneven number of bytes.
+                    # right now the is handled by receiving all the bytes (big chunk)
+                    # TODO: need to receive additional bytes if decode fails
                     data_received.append(data.decode())
                     print("Received data chunk")
                 else:

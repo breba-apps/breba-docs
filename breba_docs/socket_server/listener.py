@@ -35,7 +35,6 @@ def handle_command(command, process, writer: StreamWriter):
         # start executing collect_output, but pass control back to caller in order to
         # handle additional commands/inputs
         task = asyncio.create_task(collect_output(process, writer, command_end_marker))
-        writer.write(f"task: {task}".encode())
         return task
 
 

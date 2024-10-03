@@ -1,13 +1,50 @@
 import json
 import os
 import time
+import shlex
 
 import docker
 import pytest
 
-from breba_docs.analyzer.service import execute_detach, execute_command
 from breba_docs.socket_server.client import Client
 from breba_docs.socket_server.listener import PORT
+
+
+def execute_detach(command, container):
+    # this command will be able to run any command regardless of quote use
+    docker_command = f"/bin/bash -c {shlex.quote(command.strip())}"
+
+    exit_code, output = container.exec_run(
+        docker_command,
+        stdout=True,
+        stderr=True,
+        tty=True,
+        stream=True,
+    )
+
+    return output
+
+
+def execute_command(command, container):
+    # this command will be able to run any command regardless of quote use
+    docker_command = f"/bin/bash -c {shlex.quote(command.strip())}"
+
+    exit_code, output = container.exec_run(
+        docker_command,
+        stdout=True,
+        stderr=True,
+        tty=True,
+        stream=True,
+    )
+
+    output_text = ""
+
+    for line in output:
+        line_text = line.decode("utf-8")
+        print(line_text.strip())
+        output_text += line_text
+
+    return output_text
 
 
 @pytest.fixture

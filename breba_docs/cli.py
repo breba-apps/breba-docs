@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import docker
@@ -7,6 +8,8 @@ from breba_docs.analyzer.service import analyze
 from breba_docs.services.openai_agent import OpenAIAgent
 from dotenv import load_dotenv
 from urllib.parse import urlparse
+
+from breba_docs.socket_server.listener import PORT
 
 DEFAULT_LOCATION = ("https://gist.githubusercontent.com/yasonk/16990780a6b6e46163d1caf743f38e8f/raw"
                     "/6d5fbb7e7053642f45cb449ace1adb4eea38e6de/gistfile1.txt")
@@ -24,18 +27,51 @@ def is_file_path(file_path):
     return path.is_file()
 
 
-def run():
-    load_dotenv()
+def container_setup():
     client = docker.from_env()
-    started_container = client.containers.run(
+    print("Setting up the container")
+    container = client.containers.run(
         "python:3",
         command="/bin/bash",
         stdin_open=True,
         tty=True,
         detach=True,
         working_dir="/usr/src",
+        ports={f'{PORT}/tcp': PORT},
     )
 
+    exit_code, output = container.exec_run(
+        "pip install pexpect",
+        stdout=True,
+        stderr=True,
+    )
+    print(output.decode('utf-8'))
+
+    exit_code, output = container.exec_run(
+        "git clone https://github.com/breba-apps/breba-docs.git",
+        stdout=True,
+        stderr=True,
+    )
+    print(output.decode('utf-8'))
+
+    # Detached to run in the background
+    container.exec_run(
+        "python breba-docs/breba_docs/socket_server/listener.py",
+        stdout=True,
+        stderr=True,
+        detach=True,
+        tty=True,
+    )
+
+    return container
+
+
+def run():
+    load_dotenv()
+    started_container = container_setup()
+
+    cwd = os.getcwd()
+    print(f"Current working directory is: {cwd}")
     doc_location = input("Provide url to doc file or an absolute path:") or DEFAULT_LOCATION
 
     errors = []
@@ -55,9 +91,12 @@ def run():
             print(error)
     elif document:
         ai_agent = OpenAIAgent()
-        analyze(ai_agent, started_container, document)
+        analyze(ai_agent, document)
     else:
         print("Document text is empty, but no errors were found")
+
+    started_container.stop()
+    started_container.remove()
 
 
 if __name__ == "__main__":

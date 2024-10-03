@@ -7,7 +7,7 @@ from breba_docs.socket_server.listener import PORT
 
 
 class Client:
-    def __init__(self, server_address: Tuple[str, int]):
+    def __init__(self, server_address: Tuple[str, int] = ("127.0.0.1", PORT)):
         self.server_address = server_address
         self.client_socket = None
 
@@ -47,7 +47,8 @@ class Client:
                     # right now the is handled by receiving all the bytes (big chunk)
                     # TODO: need to receive additional bytes if decode fails
                     data_received.append(data.decode())
-                    print("Received data chunk")
+                    # TODO: need handler
+                    print(f"{data.decode()}")
                 else:
                     break
         except socket.timeout:

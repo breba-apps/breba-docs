@@ -8,17 +8,17 @@ _AI documentation validator_
 Scans your documentation file and executes commands in the documentation
 to make sure that it is possible to follow the documentation.
 
-## Prerequisites
+## Getting Started
+
+### Prerequisites
 Docker engine needs to be installed and running. Use docker installation instructions for your system.
 
-Get OpenAI API Key and set environment variable like this:
+Get an OpenAI API Key and set environment variable like this:
 ```bash
 export OPENAI_API_KEY=[your_open_ai_api_key]
 ```
 
-## Getting Started
-
-To install breba-docs, run the following commands:
+To install and run breba-docs, run the following commands:
 
 ```bash
 pip install breba-docs
@@ -32,3 +32,6 @@ The software will then analyze the documentation and run the commands found in t
 inside a docker container with python installed.
 
 The AI will then provide feedback regarding how it was able to follow the instructions.
+
+## Contributing
+For contributing to the project, please refer to [Contribution Guide](docs/CONTRIBUTING.md). 

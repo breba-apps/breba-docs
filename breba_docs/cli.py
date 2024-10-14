@@ -66,14 +66,12 @@ def parse_arguments():
     return parser.parse_args()
 
 
-def run():
-    args = parse_arguments()
-
+def run(debug_server=False):
     load_dotenv()
     started_container = container_setup()
 
-    if args.debug_server:
-        logs_thread = start_logs_thread(started_container)
+    if debug_server:
+        start_logs_thread(started_container)  # no need to join because it should just run to the end of the process
         time.sleep(0.5)
 
     try:
@@ -107,4 +105,5 @@ def run():
 
 
 if __name__ == "__main__":
-    run()
+    args = parse_arguments()
+    run(args.debug_server)

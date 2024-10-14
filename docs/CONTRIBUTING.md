@@ -14,7 +14,7 @@ Install poetry to manage dependencies. See [poetry installation instructions](ht
 
 ## Developing
 
-### Fork the repository
+### Fork the repository and build docker image
 Fork the repository. Then clone it to your local machine:
 ```shell
 git clone https://github.com/breba-apps/you-username/breba-docs.git
@@ -23,6 +23,7 @@ git clone https://github.com/breba-apps/you-username/breba-docs.git
 ### Run the code
 ```shell
 cd breba-docs
+docker build -t breba-image .  
 poetry install
 poetry run breba_docs
 ```

@@ -47,11 +47,6 @@ def test_run_with_valid_url(mock_docker, mock_requests, mock_analyze, mock_opena
 
     run()
 
-    # Assert that the Docker container setup was done
-    mock_docker.exec_run.assert_any_call("pip install pexpect", stdout=True, stderr=True)
-    mock_docker.exec_run.assert_any_call("git clone https://github.com/breba-apps/breba-docs.git", stdout=True,
-                                         stderr=True)
-
     # Check that requests.get was called to fetch the document
     mock_requests.get.assert_called_once_with("https://valid.url/to/document.md")
 
@@ -74,11 +69,6 @@ def test_run_with_valid_file_path(mocker, mock_docker, mock_analyze, mock_openai
 
     # Assert that the file was opened and read
     open_mock.assert_any_call("/valid/path/to/document.md", "r")
-
-    # Assert that the Docker container setup was done
-    mock_docker.exec_run.assert_any_call("pip install pexpect", stdout=True, stderr=True)
-    mock_docker.exec_run.assert_any_call("git clone https://github.com/breba-apps/breba-docs.git", stdout=True,
-                                         stderr=True)
 
     mock_analyze.assert_called_once()
 

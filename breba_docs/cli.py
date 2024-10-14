@@ -1,4 +1,7 @@
+import argparse
 import os
+import threading
+import time
 from pathlib import Path
 
 import docker
@@ -29,74 +32,78 @@ def is_file_path(file_path):
 
 def container_setup():
     client = docker.from_env()
-    print("Setting up the container")
+    breba_image = os.environ.get("BREBA_IMAGE", "breba-image")
+    print(f"Setting up the container with image: {breba_image}")
     container = client.containers.run(
-        "python:3",
-        command="/bin/bash",
+        breba_image,
         stdin_open=True,
         tty=True,
         detach=True,
         working_dir="/usr/src",
         ports={f'{PORT}/tcp': PORT},
     )
-
-    exit_code, output = container.exec_run(
-        "pip install pexpect",
-        stdout=True,
-        stderr=True,
-    )
-    print(output.decode('utf-8'))
-
-    exit_code, output = container.exec_run(
-        "git clone https://github.com/breba-apps/breba-docs.git",
-        stdout=True,
-        stderr=True,
-    )
-    print(output.decode('utf-8'))
-
-    # Detached to run in the background
-    container.exec_run(
-        "python breba-docs/breba_docs/socket_server/listener.py",
-        stdout=True,
-        stderr=True,
-        detach=True,
-        tty=True,
-    )
-
     return container
 
 
+def get_container_logs(container):
+    # Get the logs from the container one time
+    logs = container.logs(stream=True)
+    for log in logs:
+        print(log.decode('utf-8'), end="")
+
+
+def start_logs_thread(container):
+    # Create and start a thread to print logs
+    logs_thread = threading.Thread(target=get_container_logs, args=(container,))
+    logs_thread.start()
+    return logs_thread
+
+
+def parse_arguments():
+    # Set up command-line argument parsing
+    parser = argparse.ArgumentParser(description="Breba CLI")
+    parser.add_argument("--debug-server", action="store_true", help="Enable logging from the server.")
+    return parser.parse_args()
+
+
 def run():
+    args = parse_arguments()
+
     load_dotenv()
     started_container = container_setup()
 
-    cwd = os.getcwd()
-    print(f"Current working directory is: {cwd}")
-    doc_location = input("Provide url to doc file or an absolute path:") or DEFAULT_LOCATION
+    if args.debug_server:
+        logs_thread = start_logs_thread(started_container)
+        time.sleep(0.5)
 
-    errors = []
-    if is_file_path(doc_location):
-        with open(doc_location, "r") as file:
-            document = file.read()
-    elif is_valid_url(doc_location):
-        response = requests.get(doc_location)
-        # TODO: if response is not md file produce error message
-        document = response.text
-    else:
-        document = None
-        errors.append("Not a valid url or local file path")
+    try:
+        cwd = os.getcwd()
+        print(f"Current working directory is: {cwd}")
+        doc_location = input("Provide url to doc file or an absolute path:") or DEFAULT_LOCATION
 
-    if errors:
-        for error in errors:
-            print(error)
-    elif document:
-        ai_agent = OpenAIAgent()
-        analyze(ai_agent, document)
-    else:
-        print("Document text is empty, but no errors were found")
+        errors = []
+        if is_file_path(doc_location):
+            with open(doc_location, "r") as file:
+                document = file.read()
+        elif is_valid_url(doc_location):
+            response = requests.get(doc_location)
+            # TODO: if response is not md file produce error message
+            document = response.text
+        else:
+            document = None
+            errors.append("Not a valid url or local file path")
 
-    started_container.stop()
-    started_container.remove()
+        if errors:
+            for error in errors:
+                print(error)
+        elif document:
+            ai_agent = OpenAIAgent()
+            analyze(ai_agent, document)
+        else:
+            print("Document text is empty, but no errors were found")
+    finally:
+        started_container.stop()
+        started_container.remove()
 
 
 if __name__ == "__main__":

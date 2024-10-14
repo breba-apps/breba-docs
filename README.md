@@ -2,8 +2,10 @@
 
 _AI documentation validator_ 
 
-![workflow](https://github.com/breba-apps/breba-docs/actions/workflows/test.yaml/badge.svg?branch=main)
+[![workflow](https://github.com/breba-apps/breba-docs/actions/workflows/test.yaml/badge.svg?branch=main)](https://github.com/breba-apps/breba-docs/actions/workflows/test.yaml?query=branch%3Amain)
 
+
+${{ github.repository }}
 ## Features
 Scans your documentation file and executes commands in the documentation
 to make sure that it is possible to follow the documentation.

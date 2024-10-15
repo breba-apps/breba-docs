@@ -13,16 +13,17 @@ async def collect_output(process, writer: StreamWriter, end_marker: str):
         try:
             output = process.read_nonblocking(1024, timeout=1)
             if output == end_marker:
+                # TODO: I don't think this ever happens because we never receive just the end marker
                 break
             else:
-                print(output.strip())
+                print(f"Server Output: {output.strip()}")
                 writer.write(output.strip().encode())
                 await writer.drain()
         except pexpect.exceptions.TIMEOUT:
             # TODO: maybe send something to keep the connection alive, since we are now breaking on end_marker
             await asyncio.sleep(0.1)
         except pexpect.exceptions.EOF as e:
-            print("End of process output.")
+            print("Server Output: End of process output.")
             break
 
 
@@ -40,7 +41,7 @@ def handle_command(command, process, writer: StreamWriter):
 
 async def handle_client(reader: StreamReader, writer: StreamWriter, process, server):
     client_address = writer.get_extra_info('peername')
-    print(f"Connection from {client_address}")
+    print(f"Server Output: Connection from {client_address}")
 
     output_tasks = []
     while True:
@@ -52,7 +53,7 @@ async def handle_client(reader: StreamReader, writer: StreamWriter, process, ser
 
         command = data.get("command")
         if command == "quit":
-            print("Quit command received, closing connection.")
+            print("Server Output: Quit command received, closing connection.")
             writer.write("Quit command received, closing connection.".encode())
             break
         else:
@@ -86,10 +87,10 @@ async def start_server(process):
     server = await asyncio.start_server(
         lambda reader, writer: handle_client(reader, writer, process, server), '0.0.0.0', PORT
     )
-    print(f"Server listening on 0.0.0.0:{PORT}")
+    print(f"Server Output: Server listening on 0.0.0.0:{PORT}")
     async with server:
         await server.serve_forever()
-    print("Serving is done")
+    print("Server Output: Serving is done")
 
 
 async def run():
@@ -98,7 +99,7 @@ async def run():
     try:
         await asyncio.create_task(start_server(process))
     except asyncio.CancelledError:
-        print("Server shutdown detected. Cleaning up...")
+        print("Server Output: Server shutdown detected. Cleaning up...")
 
 
 if __name__ == "__main__":

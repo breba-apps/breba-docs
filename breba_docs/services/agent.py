@@ -24,3 +24,12 @@ class Agent(ABC):
             str: A string message describing the result of the analysis.
         """
         pass
+
+    @abstractmethod
+    def provide_input(self, text: str) -> str:
+        """ Ask agent for input
+        Args
+            text: string to check for potential prompts
+        return:
+            str: input for a prompt or empty string if no input is expected
+        """

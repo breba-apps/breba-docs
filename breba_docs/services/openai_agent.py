@@ -27,6 +27,13 @@ class OpenAIAgent(Agent):
         2) The second value, which is the reason, must not contain commas
         """
 
+    INSTRUCTIONS_RESPONSE = """
+    You are assisting a software program to run commands. Given a programs output you will need to provide a response.
+    Here are important instructions:
+    0) You will provide an exact response if response is actually expected. This will be passed directly to the program.
+    1) You will respond with "breba-noop" if response is not expected
+    """
+
     def __init__(self):
         self.client = OpenAI()
 
@@ -39,7 +46,7 @@ class OpenAIAgent(Agent):
         self.thread = self.client.beta.threads.create()
 
     def do_run(self, message, instructions):
-        message = self.client.beta.threads.messages.create(
+        self.client.beta.threads.messages.create(
             thread_id=self.thread.id,
             role="user",
             content=message
@@ -66,13 +73,19 @@ class OpenAIAgent(Agent):
         message = ("Here is the documentation file. Please provide a comma separated list of commands that can be run "
                    "in the terminal:\n")
         message += text
-        assistant_output = self.do_run(text, OpenAIAgent.INSTRUCTIONS_INPUT)
+        assistant_output = self.do_run(message, OpenAIAgent.INSTRUCTIONS_INPUT)
         return [cmd.strip() for cmd in assistant_output.split(",")]
 
     def analyze_output(self, text: str) -> str:
         message = "Here is the output after running the commands. What is your conclusion? \n"
         message += text
-        return self.do_run(text, OpenAIAgent.INSTRUCTIONS_OUTPUT)
+        return self.do_run(message, OpenAIAgent.INSTRUCTIONS_OUTPUT)
+
+    def provide_input(self, text: str) -> str:
+        message = ("Here is the output after running the commands. "
+                   "If the program is expecting input, what should it be?\n")
+        message += text
+        return self.do_run(message, OpenAIAgent.INSTRUCTIONS_RESPONSE)
 
     def close(self):
         self.client.beta.assistants.delete(self.assistant.id)

@@ -13,3 +13,6 @@ class MockAgent(Agent):
     def analyze_output(self, text: str) -> str:
         return ("Found some errors. Looks like cd my_project is failing to execute with the following error: cd "
                 "command not found")
+
+    def provide_input(self, text: str) -> str:
+        return "Y"

@@ -39,7 +39,6 @@ def analyze(agent: Agent, doc: str):
     with commands_client:
         for command in commands:
             command = {"command": command}
-            # TODO: response is not being accumulated before being sent to agent to analyze
-            #  We should be analyzing each command and based on that analysis check if we want to keep going
             response = accumulate_response(command, commands_client, agent)
-    print(agent.analyze_output(response))
+            agent_output = agent.analyze_output(response)
+            print(agent_output)

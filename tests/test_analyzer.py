@@ -3,6 +3,7 @@ import pytest
 
 from breba_docs.analyzer.service import analyze
 from breba_docs.services.agent import Agent
+from breba_docs.services.output_analyzer_result import OutputAnalyzerResult
 from breba_docs.socket_server.client import Client
 
 
@@ -10,7 +11,7 @@ from breba_docs.socket_server.client import Client
 def mock_agent(mocker):
     mock_agent = mocker.MagicMock(spec=Agent)
     mock_agent.fetch_commands.return_value = ['command1', 'command2']
-    mock_agent.analyze_output.return_value = "Analyzed output"
+    mock_agent.analyze_output.return_value = OutputAnalyzerResult.from_string("Analyzed output")
     mock_agent.provide_input.return_value = "breba-noop"
     return mock_agent
 
@@ -38,7 +39,10 @@ def test_analyze(mocker, mock_agent, mock_client):
     mock_client.send_message.assert_any_call(expected_command2)
 
     # Check that analyze_output was called with the final response
-    mock_agent.analyze_output.assert_called_once_with('response2')
+    mock_agent.analyze_output.assert_has_calls([
+        mocker.call('response1'),
+        mocker.call('response2')
+    ], any_order=False)
 
     # Check that the Client context was used
     mock_client.__enter__.assert_called_once()

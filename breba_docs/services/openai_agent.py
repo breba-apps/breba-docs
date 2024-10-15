@@ -1,6 +1,7 @@
 from openai import OpenAI
 
 from breba_docs.services.agent import Agent
+from breba_docs.services.output_analyzer_result import OutputAnalyzerResult, FAIL, PASS, UNKNOWN
 
 
 class OpenAIAgent(Agent):
@@ -16,13 +17,13 @@ class OpenAIAgent(Agent):
     in the document even if there are typos or errors.
     """
 
-    INSTRUCTIONS_OUTPUT = """
+    INSTRUCTIONS_OUTPUT = f"""
         You are assisting a software program to validate contents of a document. After running commands from the
         documentation, the user received some output and needs help understanding the output. 
         Here are important instructions:
         0) Never return markdown. You will return text without special formatting
         1) The user will present you with output of the commands that were just run. You will answer with 
-        comma-separated values. The first value will be "FAIL", "PASS", or "UNKNOWN". The second value is a single 
+        comma-separated values. The first value will be "{FAIL}", "{PASS}", or "{UNKNOWN}". The second value is a single 
         sentence providing reasons for why. 
         2) The second value, which is the reason, must not contain commas
         """
@@ -43,29 +44,28 @@ class OpenAIAgent(Agent):
             model="gpt-4o-mini"
         )
 
-        self.thread = self.client.beta.threads.create()
-
     def do_run(self, message, instructions):
+        thread = self.client.beta.threads.create()
         self.client.beta.threads.messages.create(
-            thread_id=self.thread.id,
+            thread_id=thread.id,
             role="user",
             content=message
         )
 
         run = self.client.beta.threads.runs.create_and_poll(
-            thread_id=self.thread.id,
+            thread_id=thread.id,
             assistant_id=self.assistant.id,
             instructions=instructions
         )
 
         if run.status == 'completed':
             messages = self.client.beta.threads.messages.list(
-                thread_id=self.thread.id
+                thread_id=thread.id
             )
 
             return messages.data[0].content[0].text.value
         else:
-            print(run.status)
+            print(f"OpenAI run.status: {run.status}")
 
     def fetch_commands(self, text: str) -> list[str]:
         # TODO: Verify that this is even a document file.
@@ -76,16 +76,17 @@ class OpenAIAgent(Agent):
         assistant_output = self.do_run(message, OpenAIAgent.INSTRUCTIONS_INPUT)
         return [cmd.strip() for cmd in assistant_output.split(",")]
 
-    def analyze_output(self, text: str) -> str:
+    def analyze_output(self, text: str) -> OutputAnalyzerResult:
         message = "Here is the output after running the commands. What is your conclusion? \n"
         message += text
-        return self.do_run(message, OpenAIAgent.INSTRUCTIONS_OUTPUT)
+        return OutputAnalyzerResult.from_string(self.do_run(message, OpenAIAgent.INSTRUCTIONS_OUTPUT))
 
     def provide_input(self, text: str) -> str:
         message = ("Here is the output after running the commands. "
                    "If the program is expecting input, what should it be?\n")
         message += text
-        return self.do_run(message, OpenAIAgent.INSTRUCTIONS_RESPONSE)
+        run_result = self.do_run(message, OpenAIAgent.INSTRUCTIONS_RESPONSE)
+        return run_result
 
     def close(self):
         self.client.beta.assistants.delete(self.assistant.id)

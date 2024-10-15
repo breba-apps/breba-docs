@@ -1,4 +1,5 @@
 from breba_docs.services.agent import Agent
+from breba_docs.services.output_analyzer_result import OutputAnalyzerResult
 
 
 class MockAgent(Agent):
@@ -10,9 +11,9 @@ class MockAgent(Agent):
             "nodestream run sample -v",
         ]
 
-    def analyze_output(self, text: str) -> str:
-        return ("Found some errors. Looks like cd my_project is failing to execute with the following error: cd "
-                "command not found")
+    def analyze_output(self, text: str) -> OutputAnalyzerResult:
+        return OutputAnalyzerResult.from_string("Found some errors. Looks like cd my_project is failing to execute "
+                                                "with the following error: cd command not found")
 
     def provide_input(self, text: str) -> str:
         return "Y"

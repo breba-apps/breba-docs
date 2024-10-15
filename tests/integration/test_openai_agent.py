@@ -29,10 +29,10 @@ def command_output_fail():
 @pytest.mark.integration
 def test_analyzer_output_pass(mocker, openai_agent, command_output):
     analysis = openai_agent.analyze_output(command_output)
-    assert "PASS" in analysis, f"Analyzer is expect to produce error in this case, but got {analysis}"
+    assert analysis.success, f"Analyzer is expect to produce error in this case, but got {analysis}"
 
 
 @pytest.mark.integration
 def test_analyzer_output_fail(mocker, openai_agent, command_output_fail):
     analysis = openai_agent.analyze_output(command_output_fail)
-    assert "FAIL" in analysis, f"Analyzer is expect to produce error in this case, but got {analysis}"
+    assert not analysis.success, f"Analyzer is expect to produce error in this case, but got {analysis}"

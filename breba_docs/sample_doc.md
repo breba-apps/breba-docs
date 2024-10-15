@@ -34,9 +34,15 @@ Install nodestream with `pip`
   nodestream run sample -v
 ```
 
+## Uninstalling
+
+```bash
+  pip uninstall nodestream
+```
+
 ## Documentation
 
-Visit our [Documentation](https://nodestream-proj.github.io/docs/) on Github Pages.
+Visit our [Documentation](https://nodestream-proj.github.io/docs/) on GitHub Pages.
 
 
 ## Contributing
@@ -50,8 +56,4 @@ Please adhere to this project's `code of conduct`.
 
 ## Authors
 
-- Zach Probst ([@zprobst](https://www.github.com/zprobst))
-- Chad Cloes ([@ccloes](https://www.github.com/ccloes))
-- Oshri Rozenberg([@orozen](https://www.github.com/orozen))
-- Kevin Neal ([@khneal](https://www.github.com/khneal))
-- Grant Hoffman ([@grantleehoffman](https://www.github.com/grantleehoffman))
+- Zach

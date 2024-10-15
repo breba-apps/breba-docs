@@ -11,6 +11,7 @@ def mock_agent(mocker):
     mock_agent = mocker.MagicMock(spec=Agent)
     mock_agent.fetch_commands.return_value = ['command1', 'command2']
     mock_agent.analyze_output.return_value = "Analyzed output"
+    mock_agent.provide_input.return_value = "breba-noop"
     return mock_agent
 
 
@@ -18,6 +19,7 @@ def mock_agent(mocker):
 def mock_client(mocker):
     mock_client = mocker.MagicMock(spec=Client)
     mock_client.send_message.side_effect = ['response1', 'response2']
+    mock_client.read_response.side_effect = ['', '']
     return mock_client
 
 
@@ -27,7 +29,6 @@ def test_analyze(mocker, mock_agent, mock_client):
 
     doc = "first run echo 'command1', then run echo 'command2'"
     analyze(mock_agent, doc)
-
 
     # Check that send_message was called with the correct JSON commands
     expected_command1 = json.dumps({"command": "command1"})
@@ -42,6 +43,3 @@ def test_analyze(mocker, mock_agent, mock_client):
     # Check that the Client context was used
     mock_client.__enter__.assert_called_once()
     mock_client.__exit__.assert_called_once()
-
-
-

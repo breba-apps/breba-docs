@@ -31,30 +31,30 @@ class Client:
                 print(f"Error closing socket: {e}")
             self.client_socket = None
 
-    def read_response(self):
+    def stream_response(self, timeout=2):
         """Read data from the server every 3 seconds until no more data is received."""
+        self.client_socket.settimeout(timeout)  # Set a timeout for the socket
+
+        while True:
+            data = self.client_socket.recv(16384)
+            if data:
+                yield data
+            else:
+                # If no data is received, break the loop.
+                break
+
+    def read_response(self, timeout=2):
+        """Read data from the server every data is received or timeout occurs."""
         data_received = []
-        # Timeout will be hit when the command finished and is no longer sending messages.
-        # Since the server is sending a Completion message, we could finish reading on that.
-        self.client_socket.settimeout(2)  # Set a timeout for the socket
 
         try:
-            while True:
-                data = self.client_socket.recv(16384)
-                if data:
-                    # decode breaks when partial utf-8 char is received.
-                    # this happens because utf-8 can be uneven number of bytes.
-                    # right now the is handled by receiving all the bytes (big chunk)
-                    # TODO: need to receive additional bytes if decode fails
-                    data_received.append(data.decode())
-                    # TODO: need handler
-                    print(f"{data.decode()}")
-                else:
-                    break
-        except socket.timeout:
-            print("No more data received (socket timeout).")
+            for data in self.stream_response(timeout):
+                print(data.decode())
+                data_received.append(data.decode())
+        except socket.timeout as e:
+            print(f"Socket Client: No new Data received in {timeout} seconds")
         except socket.error as e:
-            print(f"Error reading from socket: {e}")
+            print(f"Socket Client: Error reading from socket: {e}")
 
         return ''.join(data_received)
 
@@ -64,11 +64,13 @@ class Client:
             try:
                 print(f"Sending: {message}")
                 self.client_socket.sendall(message.encode())
-                return self.read_response()
             except socket.error as e:
                 print(f"Error sending message: {e}")
+
+            return self.read_response()
         else:
             print("No connection to server. Cannot send message.")
+            raise Exception("No connection to server. Cannot send message.")
 
     def __enter__(self):
         """Called when entering the 'with' block."""

@@ -68,6 +68,7 @@ def parse_arguments():
 
 def run(debug_server=False):
     load_dotenv()
+    # TODO: Start container only when special argument is provided
     started_container = container_setup()
 
     if debug_server:
@@ -80,6 +81,7 @@ def run(debug_server=False):
         doc_location = input("Provide url to doc file or an absolute path:") or DEFAULT_LOCATION
 
         errors = []
+        # TODO: allow several retries to specify a file
         if is_file_path(doc_location):
             with open(doc_location, "r") as file:
                 document = file.read()

@@ -12,13 +12,12 @@ async def collect_output(process, writer: StreamWriter, end_marker: str):
     while True:
         try:
             output = process.read_nonblocking(1024, timeout=1)
-            if output == end_marker:
-                # TODO: I don't think this ever happens because we never receive just the end marker
+            print(f"Server Output: {output.strip()}")
+            writer.write(output.encode())
+            await writer.drain()
+            if end_marker in output:
+                print(f"Server Output: {end_marker}")
                 break
-            else:
-                print(f"Server Output: {output.strip()}")
-                writer.write(output.strip().encode())
-                await writer.drain()
         except pexpect.exceptions.TIMEOUT:
             # TODO: maybe send something to keep the connection alive, since we are now breaking on end_marker
             await asyncio.sleep(0.1)
@@ -29,7 +28,9 @@ async def collect_output(process, writer: StreamWriter, end_marker: str):
 
 def handle_command(command, process, writer: StreamWriter):
     if command:
-        command_end_marker = f"Completed {str(uuid.uuid4())}"
+        process.sendline(f"echo {command}\n")
+        command_id = str(uuid.uuid4())
+        command_end_marker = f"Completed {command_id}"
         command = f"{command} && echo {command_end_marker}"
         process.sendline(command)
 
@@ -94,7 +95,7 @@ async def start_server(process):
 
 
 async def run():
-    process = pexpect.spawn('/bin/bash', encoding='utf-8', env={"PS1": ""})
+    process = pexpect.spawn('/bin/bash', encoding='utf-8', env={"PS1": ""}, echo=False)
 
     try:
         await asyncio.create_task(start_server(process))

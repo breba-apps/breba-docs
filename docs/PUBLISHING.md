@@ -5,8 +5,8 @@
 Currently, the release is automated after the "Manual Release Workflow" is dispatched from Github Actions.
 The key parts of it are:
 1. Bumping the version automatically using the user input.
-   2. The semantic version that come from user input is used to run `poetry version [user input]`
-2. Creating GitHub Release which involves creating a git tag with the latest version
+   1. The semantic version that comes from user input is used to run `poetry version [user input]`
+2. Creating GitHub Release which will also create a git tag from the latest revision
 3. Publishing to PyPi
 4. Attest the build provenance (Optional)
 5. Upload build artifact to GitHub Actions (Optional)

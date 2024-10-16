@@ -1,5 +1,6 @@
 import asyncio
 import json
+import shlex
 from asyncio import StreamReader, StreamWriter
 
 import pexpect
@@ -16,7 +17,7 @@ async def collect_output(process, writer: StreamWriter, end_marker: str):
             writer.write(output.encode())
             await writer.drain()
             if end_marker in output:
-                print(f"Server Output: {end_marker}")
+                print(f"Server Output: breaking on end marker")
                 break
         except pexpect.exceptions.TIMEOUT:
             # TODO: maybe send something to keep the connection alive, since we are now breaking on end_marker

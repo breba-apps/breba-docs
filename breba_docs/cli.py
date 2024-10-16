@@ -46,10 +46,24 @@ def container_setup():
 
 
 def get_container_logs(container):
-    # Get the logs from the container one time
+    log_buffer = b""
+
     logs = container.logs(stream=True)
     for log in logs:
-        print(log.decode('utf-8'), end="")
+        # Append new log data to the buffer
+        log_buffer += log
+
+        try:
+            # Try decoding the buffer
+            decoded_log = log_buffer.decode('utf-8')
+            print(decoded_log, end="")
+
+            # If successful, clear the buffer
+            log_buffer = b""
+
+        except UnicodeDecodeError:
+            # If decoding fails, accumulate more log data and retry
+            pass
 
 
 def start_logs_thread(container):

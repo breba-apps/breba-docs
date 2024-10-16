@@ -29,7 +29,10 @@ async def collect_output(process, writer: StreamWriter, end_marker: str):
 
 def handle_command(command, process, writer: StreamWriter):
     if command:
-        process.sendline(f"echo {command}\n")
+        # basically echo the command, but have to escape quotes first
+        escaped_command = shlex.quote(command)
+        process.sendline(f"echo {escaped_command}\n")
+
         command_id = str(uuid.uuid4())
         command_end_marker = f"Completed {command_id}"
         command = f"{command} && echo {command_end_marker}"

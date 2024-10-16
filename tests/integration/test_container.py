@@ -73,6 +73,9 @@ def container():
         working_dir="/usr/src",
         ports={f'{PORT}/tcp': PORT},
     )
+    execute_command("pip install pexpect", started_container)
+    command = 'python socket_server/listener.py'
+    execute_detach(command, started_container)
 
     yield started_container
     started_container.stop()
@@ -81,9 +84,6 @@ def container():
 
 @pytest.mark.integration
 def test_execute_command(container):
-    execute_command("pip install pexpect", container)
-    command = 'python socket_server/listener.py'
-    execute_detach(command, container)
     # TODO: Needs to work without sleep anywhere in this code. Here We wait for listener to start up.
     #  Connect to server should wait for server to come up
     time.sleep(2)
@@ -99,3 +99,17 @@ def test_execute_command(container):
     assert "Server Closed" in response
     assert "Proceed (Y/n)" in response
     assert "Successfully uninstalled" in response
+
+
+@pytest.mark.integration
+def test_execute_ampersand_command(container):
+    # TODO: Needs to work without sleep anywhere in this code. Here We wait for listener to start up.
+    #  Connect to server should wait for server to come up
+    time.sleep(2)
+    client = Client(("127.0.0.1", PORT))
+    response = ""
+    with client:
+        command = {"command": 'mkdir test && cd test && pwd && echo "more testing is needed"'}
+        response = client.send_message(json.dumps(command))
+    assert "/usr/src/test" in response
+    assert "No such file or directory" not in response

@@ -13,13 +13,13 @@ def openai_agent():
 
 @pytest.fixture
 def command_output():
-    with open('./tests/integration/command_output_pass.txt', 'r') as file:
+    with open('./tests/integration/fixtures/command_output_pass.txt', 'r') as file:
         return file.read()
 
 
 @pytest.fixture
 def command_output_fail():
-    with open('./tests/integration/command_output_fail.txt', 'r') as file:
+    with open('./tests/integration/fixtures/command_output_fail.txt', 'r') as file:
         return file.read()
 
 

@@ -111,8 +111,8 @@ def run(debug_server=False):
             for error in errors:
                 print(error)
         elif document:
-            ai_agent = OpenAIAgent()
-            analyze(ai_agent, document)
+            with OpenAIAgent() as ai_agent:
+                analyze(ai_agent, document)
         else:
             print("Document text is empty, but no errors were found")
     finally:

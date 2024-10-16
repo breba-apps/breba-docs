@@ -37,12 +37,17 @@ class OpenAIAgent(Agent):
 
     def __init__(self):
         self.client = OpenAI()
-
         self.assistant = self.client.beta.assistants.create(
             name="Breba Docs",
             instructions=OpenAIAgent.INSTRUCTIONS_GENERAL,
             model="gpt-4o-mini"
         )
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
     def do_run(self, message, instructions):
         thread = self.client.beta.threads.create()

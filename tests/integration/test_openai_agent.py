@@ -7,11 +7,8 @@ from dotenv import load_dotenv
 @pytest.fixture
 def openai_agent():
     load_dotenv()
-    agent = OpenAIAgent()
-
-    yield agent
-
-    agent.close()
+    with OpenAIAgent() as agent:
+        yield agent
 
 
 @pytest.fixture

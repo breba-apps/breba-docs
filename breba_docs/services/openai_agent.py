@@ -35,6 +35,26 @@ class OpenAIAgent(Agent):
     1) You will respond with "breba-noop" if response is not expected
     """
 
+    INSTRUCTIONS_GET_COMMANDS_FOR_TASK = """
+    You are an expert in Quality Control for documentation. You  are 
+    assisting a software program to create a list of terminal commands that will accomplish a given  task.
+
+    { "name": "uninstalling nodestream", "description": "As a documentation testing software I want to make sure that 
+    the instructions to uninstall nodestream are actually working on a real system." }, 
+    
+    Provide a list of terminal commands that accomplish the task. 
+    This is a broad definition of the task. Make sure to list all commands needed to accomplish this task. I am a software program that will run these commands on a system that has little installed other than python. Do not assume any software is installed. Only use the commands from the document exactly as they are written in the document. Do not modify commands from the document. Do not invent new commands. Respond in json format. If there are no commands listed in the document support completing this task, return an empty list.
+    """
+
+    INSTRUCTIONS_GET_GOALS = """
+    You are an expert in Quality Control for documentation. You  are assisting a software 
+    program to check that the tasks described in the following document actually work.
+
+    Provide a list of goals that a user can accomplish via a terminal based on the 
+    documentation. Headings and titles can be used as an indicator of a task. Respond using json like: {goals: [ 
+    goal: { "name": "getting started", "description": "As a user I would like to get started with the software"}]}
+    """
+
     def __init__(self):
         self.client = OpenAI()
         self.assistant = self.client.beta.assistants.create(

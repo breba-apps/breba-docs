@@ -2,8 +2,6 @@
 
 _Fast, Declarative ETL for Graph Databases._
 
-[![Demo](https://raw.githubusercontent.com/nodestream-proj/nodestream/e94d0faa024c0f8da1e83a4ff6d83746504d197e/docs/img/demo.gif)](https://badge.fury.io/py/nodestream)
-
 #### Badges
 
 [![Continuous Integration](https://github.com/nodestream-proj/nodestream/actions/workflows/ci.yaml/badge.svg)](https://github.com/nodestream-proj/nodestream/actions/workflows/ci.yaml)

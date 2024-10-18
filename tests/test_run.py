@@ -84,6 +84,7 @@ def test_run_with_invalid_input(mocker, mock_docker):
     # Run the program
     run()
 
-    print_mock.assert_called_with("Not a valid url or local file path")
+    print_mock.assert_any_call("Not a valid URL or local file path. 1 retries remaining.")
+    print_mock.assert_any_call("No document provided. Exiting...")
 
     mocker.patch('breba_docs.cli.analyze').assert_not_called()

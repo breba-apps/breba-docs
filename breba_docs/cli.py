@@ -30,7 +30,7 @@ def is_file_path(file_path):
     return path.is_file()
 
 
-def container_setup():
+def container_setup(debug=False):
     client = docker.from_env()
     breba_image = os.environ.get("BREBA_IMAGE", "breba-image")
     print(f"Setting up the container with image: {breba_image}")
@@ -42,6 +42,10 @@ def container_setup():
         working_dir="/usr/src",
         ports={f'{PORT}/tcp': PORT},
     )
+    if debug:
+        start_logs_thread(container)  # no need to join because it should just run to the end of the process
+        time.sleep(0.5)
+
     return container
 
 
@@ -80,44 +84,45 @@ def parse_arguments():
     return parser.parse_args()
 
 
-def run(debug_server=False):
-    load_dotenv()
-    # TODO: Start container only when special argument is provided
-    started_container = container_setup()
+def get_document(retries=3):
+    print(f"\nCurrent working directory is: {os.getcwd()}")
 
-    if debug_server:
-        start_logs_thread(started_container)  # no need to join because it should just run to the end of the process
-        time.sleep(0.5)
+    if retries == 0:
+        return None
+
+    doc_location = input(f"Provide URL to doc file or an absolute path:") or DEFAULT_LOCATION
+
+    if is_file_path(doc_location):
+        with open(doc_location, "r") as file:
+            return file.read()
+    elif is_valid_url(doc_location):
+        response = requests.get(doc_location)
+        # TODO: if response is not md file produce error message
+        return response.text
+    else:
+        print(f"Not a valid URL or local file path. {retries - 1} retries remaining.")
+        return get_document(retries - 1)
+
+
+def run(debug_server=False, started_container=True):
+    started_container = None
+    load_dotenv()
 
     try:
-        cwd = os.getcwd()
-        print(f"Current working directory is: {cwd}")
-        doc_location = input("Provide url to doc file or an absolute path:") or DEFAULT_LOCATION
+        document = get_document()
 
-        errors = []
-        # TODO: allow several retries to specify a file
-        if is_file_path(doc_location):
-            with open(doc_location, "r") as file:
-                document = file.read()
-        elif is_valid_url(doc_location):
-            response = requests.get(doc_location)
-            # TODO: if response is not md file produce error message
-            document = response.text
-        else:
-            document = None
-            errors.append("Not a valid url or local file path")
+        # TODO: Start container only when special argument is provided
+        started_container = container_setup(debug_server)
 
-        if errors:
-            for error in errors:
-                print(error)
-        elif document:
+        if document:
             with OpenAIAgent() as ai_agent:
                 analyze(ai_agent, document)
         else:
-            print("Document text is empty, but no errors were found")
+            print("No document provided. Exiting...")
     finally:
-        started_container.stop()
-        started_container.remove()
+        if started_container:
+            started_container.stop()
+            started_container.remove()
 
 
 if __name__ == "__main__":

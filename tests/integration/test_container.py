@@ -88,7 +88,6 @@ def test_execute_command(container):
     #  Connect to server should wait for server to come up
     time.sleep(2)
     client = Client(("127.0.0.1", PORT))
-    response = ""
     with client:
         command = {"command": 'pip uninstall pexpect'}
         response = client.send_message(json.dumps(command))
@@ -107,7 +106,6 @@ def test_execute_ampersand_command(container):
     #  Connect to server should wait for server to come up
     time.sleep(2)
     client = Client(("127.0.0.1", PORT))
-    response = ""
     with client:
         command = {"command": 'mkdir test && cd test && pwd && echo "more testing is needed"'}
         response = client.send_message(json.dumps(command))

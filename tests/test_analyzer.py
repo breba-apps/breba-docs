@@ -20,7 +20,9 @@ def mock_agent(mocker):
 def mock_client(mocker):
     mock_client = mocker.MagicMock(spec=Client)
     mock_client.send_message.side_effect = ['response1', 'response2']
-    mock_client.read_response.side_effect = ['', '']
+    mock_client.read_response.side_effect = ['', '']  # This means no new data was received when double checking
+    mock_client.__enter__.return_value = mock_client  # Ensure the context manager works correctly
+    mock_client.__exit__.return_value = None  # Ensure the context manager works correctly
     return mock_client
 
 

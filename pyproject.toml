@@ -43,17 +43,6 @@ markers = [
 # log_cli = "True"
 # log_cli_level = "INFO"
 
-
-
-
-
-
-
-
-
-
-
-
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.2"
 pytest-mock = "^3.14.0"
@@ -64,3 +53,4 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 breba_docs = "breba_docs.cli:run"
+breba-docs = "breba_docs.cli:run"

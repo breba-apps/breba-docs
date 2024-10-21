@@ -18,6 +18,7 @@ Get an OpenAI API Key and set environment variable like this:
 export OPENAI_API_KEY=[your_open_ai_api_key]
 ```
 
+### Install and Run
 To install and run breba-docs, run the following commands:
 
 ```bash

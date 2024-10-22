@@ -29,8 +29,8 @@ def mock_client(mocker):
 
 def test_analyze(mocker, mock_agent, mock_client):
     # Mocking the Client class to return the mock_client
-    mocker.patch('breba_docs.analyzer.service.Client', return_value=mock_client)
-    mocker.patch('breba_docs.analyzer.service.OpenAIAgent', return_value=mock_agent)
+    mocker.patch('breba_docs.analyzer.document_analyzer.Client', return_value=mock_client)
+    mocker.patch('breba_docs.analyzer.document_analyzer.OpenAIAgent', return_value=mock_agent)
 
     doc = "first run echo 'command1', then run echo 'command2'"
     analyzer = DocumentAnalyzer()

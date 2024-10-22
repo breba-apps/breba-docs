@@ -47,8 +47,15 @@ class OpenAIAgent(Agent):
     program to check that the tasks described in the following document actually work. NEVER USE MARKDOWN. JUST
     PROVIDE JSON THAT CAN BE USED IN A SOFTWARE PROGRAM.
     
-    Respond using json like: {goals: [ 
-    goal: { "name": "getting started", "description": "As a user I would like to get started with the software"}]}
+    Respond using json like:
+    {
+      "goals": [
+        {
+          "name": "getting started",
+          "description": "As a user I would like to get started with the software"
+        }
+      ]
+    }
     """
 
     def __init__(self):
@@ -88,10 +95,11 @@ class OpenAIAgent(Agent):
         else:
             print(f"OpenAI run.status: {run.status}")
 
-    def fetch_goals(self, doc: str) -> list[str]:
-        message = ("Provide a list of goals that a user can accomplish via a terminal based on the documentation. "
-                   "Headings and titles can be used as an indicator of a task. \n")
+    def fetch_goals(self, doc: str) -> list[dict]:
+        message = ("Provide a list of the most important 3 goals that a user can accomplish via a terminal based on "
+                   "the documentation. Headings and titles can be used as an indicator of a task. \n")
         assistant_output = self.do_run(message, OpenAIAgent.INSTRUCTIONS_GET_GOALS + doc)
+        # TODO: create class for Goal that will parse the string using json.loads
         assistant_output = json.loads(assistant_output)
         return assistant_output["goals"]
 

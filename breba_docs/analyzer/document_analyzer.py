@@ -1,6 +1,9 @@
 import json
+
 from breba_docs.services.agent import Agent
+from breba_docs.services.goal_report import GoalReport, DocumentReport
 from breba_docs.services.openai_agent import OpenAIAgent
+from breba_docs.services.output_analyzer_result import OutputAnalyzerResult
 from breba_docs.socket_server.client import Client
 
 
@@ -51,7 +54,7 @@ class DocumentAnalyzer:
 
         return response
 
-    def execute_commands(self, commands):
+    def execute_commands(self, commands) -> list[OutputAnalyzerResult]:
         report = []
         with Client() as commands_client:
             for command in commands:
@@ -63,10 +66,12 @@ class DocumentAnalyzer:
 
     def analyze(self, doc: str):
         goals = self.agent.fetch_goals(doc)
-        goal_reports = []
+        goal_reports: list[GoalReport] = []
         for goal in goals:
             commands = self.agent.fetch_commands(doc, json.dumps(goal))
-            report = self.execute_commands(commands)
-            goal_reports.append(report)
-        print(goal_reports)
+            command_reports = self.execute_commands(commands)
+            goal_report = GoalReport(goal["name"], goal["description"], command_reports)
+            goal_reports.append(goal_report)
+        document_report: DocumentReport = DocumentReport("Some Document", goal_reports)
+        print(document_report)
 

@@ -10,7 +10,8 @@ from breba_docs.socket_server.client import Client
 @pytest.fixture
 def mock_agent(mocker):
     mock_agent = mocker.MagicMock(spec=Agent)
-    mock_agent.fetch_goals.return_value = ['goal1', 'goal2']
+    mock_agent.fetch_goals.return_value = [{"name": "Install nodestream", "description": "Install nodestream"},
+                                           {"name": "Install nodestream2", "description": "Install nodestream2"}]
     mock_agent.fetch_commands.return_value = ['command1', 'command2']
     mock_agent.analyze_output.return_value = OutputAnalyzerResult.from_string("Analyzed output")
     mock_agent.provide_input.return_value = "breba-noop"

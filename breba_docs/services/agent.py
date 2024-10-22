@@ -18,7 +18,7 @@ class Agent(ABC):
         pass
 
     @abstractmethod
-    def fetch_goals(self, doc: str) -> list[str]:
+    def fetch_goals(self, doc: str) -> list[dict]:
         """
         Fetch goals from the given text.
 

@@ -3,7 +3,10 @@ from breba_docs.services.output_analyzer_result import OutputAnalyzerResult
 
 
 class MockAgent(Agent):
-    def fetch_commands(self, text: str) -> list[str]:
+    def fetch_goals(self, doc: str) -> list[str]:
+        return ["Install nodestream", "Run sample"]
+
+    def fetch_commands(self, text: str, goal: str) -> list[str]:
         return [
             "pip install nodestream",
             "nodestream new --database neo4j my_project",

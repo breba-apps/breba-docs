@@ -5,15 +5,28 @@ from breba_docs.services.output_analyzer_result import OutputAnalyzerResult
 
 class Agent(ABC):
     @abstractmethod
-    def fetch_commands(self, text: str) -> list[str]:
+    def fetch_commands(self, text: str, goal: str) -> list[str]:
         """
         Fetch commands from the given text.
 
         Args:
+            goal: the goal for which we are fetching the commands
             text (str): Input text from which commands are to be extracted.
 
         Returns:
             list[str]: A list of shell commands extracted from the text."""
+        pass
+
+    @abstractmethod
+    def fetch_goals(self, doc: str) -> list[str]:
+        """
+        Fetch goals from the given text.
+
+        Args:
+            doc (str): Input text from which goals are to be extracted.
+
+        Returns:
+            list[str]: A list of goals extracted from the text."""
         pass
 
     @abstractmethod

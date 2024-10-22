@@ -7,11 +7,10 @@ from pathlib import Path
 import docker
 import requests
 
-from breba_docs.analyzer.service import analyze
-from breba_docs.services.openai_agent import OpenAIAgent
 from dotenv import load_dotenv
 from urllib.parse import urlparse
 
+from breba_docs.analyzer.service import DocumentAnalyzer
 from breba_docs.socket_server.listener import PORT
 
 DEFAULT_LOCATION = ("https://gist.githubusercontent.com/yasonk/16990780a6b6e46163d1caf743f38e8f/raw"
@@ -104,7 +103,7 @@ def get_document(retries=3):
         return get_document(retries - 1)
 
 
-def run(debug_server=False, started_container=True):
+def run(debug_server=False):
     started_container = None
     load_dotenv()
 
@@ -115,8 +114,8 @@ def run(debug_server=False, started_container=True):
         started_container = container_setup(debug_server)
 
         if document:
-            with OpenAIAgent() as ai_agent:
-                analyze(ai_agent, document)
+            analyzer = DocumentAnalyzer()
+            analyzer.analyze(document)
         else:
             print("No document provided. Exiting...")
     finally:

@@ -95,7 +95,7 @@ def test_execute_command(container):
         response = ''.join([response, client.send_message(json.dumps(command))])
         command = {"command": 'quit'}
         response = ''.join([response, client.send_message(json.dumps(command))])
-    assert "Server Closed" in response
+    assert "Quit command received" in response
     assert "Proceed (Y/n)" in response
     assert "Successfully uninstalled" in response
 

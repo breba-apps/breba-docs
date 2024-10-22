@@ -10,7 +10,7 @@ import requests
 from dotenv import load_dotenv
 from urllib.parse import urlparse
 
-from breba_docs.analyzer.service import DocumentAnalyzer
+from breba_docs.analyzer.document_analyzer import DocumentAnalyzer
 from breba_docs.socket_server.listener import PORT
 
 DEFAULT_LOCATION = ("https://gist.githubusercontent.com/yasonk/16990780a6b6e46163d1caf743f38e8f/raw"

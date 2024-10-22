@@ -1,13 +1,13 @@
 from dataclasses import dataclass
 
-from breba_docs.services.output_analyzer_result import OutputAnalyzerResult
+from breba_docs.services.output_analyzer_result import CommandReport
 
 
 @dataclass
 class GoalReport:
     goal_name: str
     goal_description: str
-    command_reports: list[OutputAnalyzerResult]
+    command_reports: list[CommandReport]
 
 
 @dataclass

@@ -3,7 +3,7 @@ import json
 from breba_docs.services.agent import Agent
 from breba_docs.services.goal_report import GoalReport, DocumentReport
 from breba_docs.services.openai_agent import OpenAIAgent
-from breba_docs.services.output_analyzer_result import OutputAnalyzerResult
+from breba_docs.services.output_analyzer_result import CommandReport
 from breba_docs.socket_server.client import Client
 
 
@@ -54,7 +54,7 @@ class DocumentAnalyzer:
 
         return response
 
-    def execute_commands(self, commands) -> list[OutputAnalyzerResult]:
+    def execute_commands(self, commands) -> list[CommandReport]:
         report = []
         with Client() as commands_client:
             for command in commands:

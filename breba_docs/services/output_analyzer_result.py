@@ -3,13 +3,13 @@ from dataclasses import dataclass
 
 
 @dataclass
-class OutputAnalyzerResult:
+class CommandReport:
     command: str
     success: bool
     insights: str
 
     @classmethod
-    def from_string(cls, message: str) -> "OutputAnalyzerResult":
+    def from_string(cls, message: str) -> "CommandReport":
         data = json.loads(message)
         return cls(data["command"], data["success"], data["insights"])
 

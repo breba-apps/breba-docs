@@ -1,10 +1,10 @@
 import pytest
 
-from breba_docs.services.output_analyzer_result import OutputAnalyzerResult
+from breba_docs.services.output_analyzer_result import CommandReport
 
 
 def test_agent_output_from_string():
-    result = OutputAnalyzerResult.from_string(OutputAnalyzerResult.example_str())
+    result = CommandReport.from_string(CommandReport.example_str())
 
     assert result.success is True
     assert result.command == "git clone https://github.com/Nodestream/nodestream.git"

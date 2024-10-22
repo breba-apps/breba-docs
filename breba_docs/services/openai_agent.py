@@ -3,7 +3,7 @@ import json
 from openai import OpenAI
 
 from breba_docs.services.agent import Agent
-from breba_docs.services.output_analyzer_result import OutputAnalyzerResult
+from breba_docs.services.output_analyzer_result import CommandReport
 
 
 class OpenAIAgent(Agent):
@@ -19,7 +19,7 @@ Here are important instructions:
 1) The user will present you with output of the commands that were just run.
 2) The command has failed if there are errors and the user did not achieve intended goal
 3) You will respond with a json that looks like this:
-{OutputAnalyzerResult.example_str()}
+{CommandReport.example_str()}
 """
 
     INSTRUCTIONS_RESPONSE = """
@@ -111,10 +111,10 @@ commands listed in the document support completing this task, return an empty li
         assistant_output = self.do_run(message, OpenAIAgent.INSTRUCTIONS_GET_COMMANDS_FOR_TASK.format(doc))
         return [cmd.strip() for cmd in assistant_output.split(",")]
 
-    def analyze_output(self, text: str) -> OutputAnalyzerResult:
+    def analyze_output(self, text: str) -> CommandReport:
         message = "Here is the output after running the commands. What is your conclusion? \n"
         message += text
-        return OutputAnalyzerResult.from_string(self.do_run(message, OpenAIAgent.INSTRUCTIONS_ANALYZE_OUTPUT))
+        return CommandReport.from_string(self.do_run(message, OpenAIAgent.INSTRUCTIONS_ANALYZE_OUTPUT))
 
     def provide_input(self, text: str) -> str:
         message = ("Here is the output after running the commands. "

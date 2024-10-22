@@ -3,7 +3,6 @@ import pytest
 
 from breba_docs.analyzer.document_analyzer import DocumentAnalyzer
 from breba_docs.services.agent import Agent
-from breba_docs.services.output_analyzer_result import OutputAnalyzerResult
 from breba_docs.socket_server.client import Client
 
 

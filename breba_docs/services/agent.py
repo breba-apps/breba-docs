@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from breba_docs.services.output_analyzer_result import OutputAnalyzerResult
+from breba_docs.services.output_analyzer_result import CommandReport
 
 
 class Agent(ABC):
@@ -30,7 +30,7 @@ class Agent(ABC):
         pass
 
     @abstractmethod
-    def analyze_output(self, text: str) -> OutputAnalyzerResult:
+    def analyze_output(self, text: str) -> CommandReport:
         """ Analyze the given text. And provide explanation for the analysis
         Args:
             text (str): The output text to analyze for errors or information.

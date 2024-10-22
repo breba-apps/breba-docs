@@ -111,3 +111,20 @@ def test_execute_ampersand_command(container):
         response = client.send_message(json.dumps(command))
     assert "/usr/src/test" in response
     assert "No such file or directory" not in response
+
+
+@pytest.mark.integration
+def test_multiple_connections(container):
+    time.sleep(2)
+    with Client(("127.0.0.1", PORT)) as client:
+        command = {"command": 'mkdir test && cd test && pwd && echo "more testing is needed"'}
+        response = client.send_message(json.dumps(command))
+
+    assert "/usr/src/test" in response
+    assert "No such file or directory" not in response
+
+    with Client(("127.0.0.1", PORT)) as client:
+        command = {"command": 'mkdir test2 && cd test2 && pwd && echo "more testing is needed"'}
+        response = client.send_message(json.dumps(command))
+    assert "/usr/src/test2" in response
+    assert "No such file or directory" not in response

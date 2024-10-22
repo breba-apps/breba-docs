@@ -7,6 +7,7 @@ import pexpect
 import uuid
 
 PORT = 44440
+server: asyncio.Server | None = None
 
 
 async def collect_output(process, writer: StreamWriter, end_marker: str):
@@ -44,9 +45,17 @@ def handle_command(command, process, writer: StreamWriter):
         return task
 
 
-async def handle_client(reader: StreamReader, writer: StreamWriter, process, server):
+async def stop_server():
+    server.close()
+    await server.wait_closed()
+    print("Server Closed")
+
+
+async def handle_client(reader: StreamReader, writer: StreamWriter):
     client_address = writer.get_extra_info('peername')
     print(f"Server Output: Connection from {client_address}")
+
+    process = pexpect.spawn('/bin/bash', encoding='utf-8', env={"PS1": ""}, echo=False)
 
     output_tasks = []
     while True:
@@ -60,7 +69,8 @@ async def handle_client(reader: StreamReader, writer: StreamWriter, process, ser
         if command == "quit":
             print("Server Output: Quit command received, closing connection.")
             writer.write("Quit command received, closing connection.".encode())
-            break
+            await stop_server()  # First stop the server
+            break  # then break out of the loop to close the connection
         else:
             output_tasks.append(handle_command(command, process, writer))
 
@@ -83,14 +93,11 @@ async def handle_client(reader: StreamReader, writer: StreamWriter, process, ser
     writer.close()
     await writer.wait_closed()
 
-    server.close()
-    await server.wait_closed()
-    print("Server Closed")
 
-
-async def start_server(process):
+async def start_server():
+    global server
     server = await asyncio.start_server(
-        lambda reader, writer: handle_client(reader, writer, process, server), '0.0.0.0', PORT
+        lambda reader, writer: handle_client(reader, writer), '0.0.0.0', PORT
     )
     print(f"Server Output: Server listening on 0.0.0.0:{PORT}")
     async with server:
@@ -98,14 +105,5 @@ async def start_server(process):
     print("Server Output: Serving is done")
 
 
-async def run():
-    process = pexpect.spawn('/bin/bash', encoding='utf-8', env={"PS1": ""}, echo=False)
-
-    try:
-        await asyncio.create_task(start_server(process))
-    except asyncio.CancelledError:
-        print("Server Output: Server shutdown detected. Cleaning up...")
-
-
 if __name__ == "__main__":
-    asyncio.run(run())
+    asyncio.run(start_server())

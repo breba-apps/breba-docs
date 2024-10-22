@@ -87,7 +87,8 @@ async def handle_client(reader: StreamReader, writer: StreamWriter):
         if task:
             task.cancel()
 
-    writer.write("Server Closed".encode())
+    # TODO: this may be an issue because when the server is closed on quit doesn't actually get here
+    writer.write("Closing writer...".encode())
     await writer.drain()
 
     writer.close()

@@ -1,6 +1,7 @@
 import asyncio
 import json
 import shlex
+import logging
 from asyncio import StreamReader, StreamWriter
 
 import pexpect
@@ -9,22 +10,23 @@ import uuid
 PORT = 44440
 server: asyncio.Server | None = None
 
+logger = logging.getLogger(__name__)
+
 
 async def collect_output(process, writer: StreamWriter, end_marker: str):
     while True:
         try:
             output = process.read_nonblocking(1024, timeout=1)
-            print(f"Server Output: {output.strip()}")
+            logger.info(output.strip())
             writer.write(output.encode())
             await writer.drain()
             if end_marker in output:
-                print(f"Server Output: breaking on end marker")
+                logger.info("Breaking on end marker")
                 break
         except pexpect.exceptions.TIMEOUT:
-            # TODO: maybe send something to keep the connection alive, since we are now breaking on end_marker
             await asyncio.sleep(0.1)
         except pexpect.exceptions.EOF as e:
-            print("Server Output: End of process output.")
+            logger.info("End of process output.")
             break
 
 
@@ -48,12 +50,12 @@ def handle_command(command, process, writer: StreamWriter):
 async def stop_server():
     server.close()
     await server.wait_closed()
-    print("Server Closed")
+    logger.info("Server Closed")
 
 
 async def handle_client(reader: StreamReader, writer: StreamWriter):
     client_address = writer.get_extra_info('peername')
-    print(f"Server Output: Connection from {client_address}")
+    logger.info(f"Connection from {client_address}")
 
     process = pexpect.spawn('/bin/bash', encoding='utf-8', env={"PS1": ""}, echo=False)
 
@@ -64,10 +66,9 @@ async def handle_client(reader: StreamReader, writer: StreamWriter):
             break
 
         data = json.loads(data.decode().strip())
-
         command = data.get("command")
         if command == "quit":
-            print("Server Output: Quit command received, closing connection.")
+            logger.info("Quit command received, closing connection.")
             writer.write("Quit command received, closing connection.".encode())
             await stop_server()  # First stop the server
             break  # then break out of the loop to close the connection
@@ -90,7 +91,6 @@ async def handle_client(reader: StreamReader, writer: StreamWriter):
     # TODO: this may be an issue because when the server is closed on quit doesn't actually get here
     writer.write("Closing writer...".encode())
     await writer.drain()
-
     writer.close()
     await writer.wait_closed()
 
@@ -100,11 +100,20 @@ async def start_server():
     server = await asyncio.start_server(
         lambda reader, writer: handle_client(reader, writer), '0.0.0.0', PORT
     )
-    print(f"Server Output: Server listening on 0.0.0.0:{PORT}")
+    logger.info(f"Server listening on 0.0.0.0:{PORT}")
     async with server:
         await server.serve_forever()
-    print("Server Output: Serving is done")
+    logger.info("Serving is done")
 
 
 if __name__ == "__main__":
+    # Configure logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        handlers=[
+            logging.FileHandler("server.log"),  # Log to file
+            logging.StreamHandler()  # Log to console
+        ]
+    )
     asyncio.run(start_server())

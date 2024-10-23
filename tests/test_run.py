@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 from unittest.mock import mock_open, MagicMock
 import requests
@@ -6,16 +8,8 @@ from breba_docs.cli import run
 
 
 @pytest.fixture
-def mock_docker(mocker):
-    # Mocking docker client and container
-    mock_client = mocker.MagicMock()
-    mock_container = mocker.MagicMock()
-    mock_container.exec_run.return_value = (None, "some output".encode())
-    mock_client.containers.run.return_value = mock_container
-
-    # Patching docker.from_env() to return the mock client
-    mocker.patch('breba_docs.cli.docker.from_env', return_value=mock_client)
-    return mock_container
+def mock_container(mocker):
+    mocker.patch('breba_docs.cli.container_setup', return_value=MagicMock())
 
 
 @pytest.fixture
@@ -40,12 +34,10 @@ def mock_document_analyzer(mocker):
     return mock_analyze_instance
 
 
-def test_run_with_valid_url(mock_docker, mock_requests, mock_document_analyzer, mocker):
+def test_run_with_valid_url(mock_requests, mock_container, mock_document_analyzer, mocker):
     # Test case where the user provides a valid URL
 
     mocker.patch('builtins.input', return_value="https://valid.url/to/document.md")
-    mocker.patch('breba_docs.cli.is_valid_url', return_value=True)
-    mocker.patch('breba_docs.cli.is_file_path', return_value=False)
 
     run()
 
@@ -56,12 +48,11 @@ def test_run_with_valid_url(mock_docker, mock_requests, mock_document_analyzer, 
     mock_document_analyzer.analyze.assert_called_once()
 
 
-def test_run_with_valid_file_path(mocker, mock_docker, mock_document_analyzer):
+def test_run_with_valid_file_path(mocker, mock_document_analyzer, mock_container):
     # Test case where the user provides a valid local file path
-
-    mocker.patch('builtins.input', return_value="/valid/path/to/document.md")
-    mocker.patch('breba_docs.cli.is_file_path', return_value=True)
-    mocker.patch('breba_docs.cli.is_valid_url', return_value=False)
+    current_dir = Path(__file__).parent
+    real_file_path = str(current_dir / "sample.md")  # use a valid file path
+    mocker.patch('builtins.input', return_value=real_file_path)
 
     # Mock the open function to simulate reading a file
     open_mock = mocker.patch('builtins.open', mock_open(read_data="Mock document content"))
@@ -70,17 +61,15 @@ def test_run_with_valid_file_path(mocker, mock_docker, mock_document_analyzer):
     run()
 
     # Assert that the file was opened and read
-    open_mock.assert_any_call("/valid/path/to/document.md", "r")
+    open_mock.assert_any_call(real_file_path, "r")
 
     mock_document_analyzer.analyze.assert_called_once()
 
 
-def test_run_with_invalid_input(mocker, mock_docker, mock_document_analyzer):
+def test_run_with_invalid_input(mocker, mock_document_analyzer):
     # Test case where the user provides invalid input
 
     mocker.patch('builtins.input', return_value="invalid_input")
-    mocker.patch('breba_docs.cli.is_file_path', return_value=False)
-    mocker.patch('breba_docs.cli.is_valid_url', return_value=False)
     print_mock = mocker.patch('builtins.print')
 
     # Run the program

@@ -60,11 +60,9 @@ def run(debug_server=False):
     try:
         document = get_document()
 
-        # TODO: Start container only when special argument is provided
-        started_container = container_setup(debug_server)
-
-
         if document:
+            # TODO: Start container only when special argument is provided
+            started_container = container_setup(debug_server)
             analyzer = DocumentAnalyzer()
             analyzer.analyze(document)
         else:

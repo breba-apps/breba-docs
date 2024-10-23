@@ -58,6 +58,7 @@ async def handle_client(reader: StreamReader, writer: StreamWriter):
     logger.info(f"Connection from {client_address}")
 
     process = pexpect.spawn('/bin/bash', encoding='utf-8', env={"PS1": ""}, echo=False)
+    process.sendline('. .venv/bin/activate')
 
     output_tasks = []
     while True:

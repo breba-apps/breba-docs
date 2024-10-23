@@ -1,11 +1,10 @@
 import json
-import os
 import time
 import shlex
 
-import docker
 import pytest
 
+from breba_docs.container import container_setup
 from breba_docs.socket_server.client import Client
 from breba_docs.socket_server.listener import PORT
 
@@ -49,11 +48,6 @@ def execute_command(command, container):
 
 @pytest.fixture
 def container():
-    client = docker.from_env()
-    cwd = os.getcwd()
-
-    listener_dir = os.path.join(cwd, "breba_docs", "socket_server")
-
     # To Run the container from terminal from breba_docs package dir
     # docker run -d -it \
     #   -v $(pwd)/breba_docs/socket_server:/usr/src/socket_server \
@@ -61,21 +55,7 @@ def container():
     #   -p 44440:44440 \
     #   python:3 \
     #   /bin/bash
-    started_container = client.containers.run(
-        "python:3",
-        command="/bin/bash",
-        volumes={
-            listener_dir: {'bind': '/usr/src/socket_server', 'mode': 'rw'}
-        },
-        stdin_open=True,
-        tty=True,
-        detach=True,
-        working_dir="/usr/src",
-        ports={f'{PORT}/tcp': PORT},
-    )
-    execute_command("pip install pexpect", started_container)
-    command = 'python socket_server/listener.py'
-    execute_detach(command, started_container)
+    started_container = container_setup(dev=True)
 
     yield started_container
     started_container.stop()

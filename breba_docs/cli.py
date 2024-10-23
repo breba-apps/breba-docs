@@ -1,17 +1,14 @@
 import argparse
 import os
-import threading
-import time
 from pathlib import Path
 
-import docker
 import requests
 
 from dotenv import load_dotenv
 from urllib.parse import urlparse
 
 from breba_docs.analyzer.document_analyzer import DocumentAnalyzer
-from breba_docs.socket_server.listener import PORT
+from breba_docs.container import container_setup
 
 DEFAULT_LOCATION = ("https://gist.githubusercontent.com/yasonk/16990780a6b6e46163d1caf743f38e8f/raw"
                     "/6d5fbb7e7053642f45cb449ace1adb4eea38e6de/gistfile1.txt")
@@ -27,53 +24,6 @@ def is_valid_url(url):
 def is_file_path(file_path):
     path = Path(file_path)
     return path.is_file()
-
-
-def container_setup(debug=False):
-    client = docker.from_env()
-    breba_image = os.environ.get("BREBA_IMAGE", "breba-image")
-    print(f"Setting up the container with image: {breba_image}")
-    container = client.containers.run(
-        breba_image,
-        stdin_open=True,
-        tty=True,
-        detach=True,
-        working_dir="/usr/src",
-        ports={f'{PORT}/tcp': PORT},
-    )
-    if debug:
-        start_logs_thread(container)  # no need to join because it should just run to the end of the process
-        time.sleep(0.5)
-
-    return container
-
-
-def get_container_logs(container):
-    log_buffer = b""
-
-    logs = container.logs(stream=True)
-    for log in logs:
-        # Append new log data to the buffer
-        log_buffer += log
-
-        try:
-            # Try decoding the buffer
-            decoded_log = log_buffer.decode('utf-8')
-            print(decoded_log, end="")
-
-            # If successful, clear the buffer
-            log_buffer = b""
-
-        except UnicodeDecodeError:
-            # If decoding fails, accumulate more log data and retry
-            pass
-
-
-def start_logs_thread(container):
-    # Create and start a thread to print logs
-    logs_thread = threading.Thread(target=get_container_logs, args=(container,))
-    logs_thread.start()
-    return logs_thread
 
 
 def parse_arguments():
@@ -112,6 +62,7 @@ def run(debug_server=False):
 
         # TODO: Start container only when special argument is provided
         started_container = container_setup(debug_server)
+
 
         if document:
             analyzer = DocumentAnalyzer()

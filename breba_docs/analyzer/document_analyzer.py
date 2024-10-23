@@ -1,5 +1,6 @@
 import json
 
+from breba_docs.analyzer.reporter import Reporter
 from breba_docs.services.agent import Agent
 from breba_docs.services.goal_report import GoalReport, DocumentReport
 from breba_docs.services.openai_agent import OpenAIAgent
@@ -73,5 +74,4 @@ class DocumentAnalyzer:
             goal_report = GoalReport(goal["name"], goal["description"], command_reports)
             goal_reports.append(goal_report)
         document_report: DocumentReport = DocumentReport("Some Document", goal_reports)
-        print(document_report)
-
+        Reporter(document_report).print_report()

@@ -34,6 +34,9 @@ You are an expert in Quality Control for documentation. You are
 assisting a software program to create a list of terminal commands that will accomplish a given task.
 Important: Never return markdown. You will return text without special formatting.
 Important: The user is usually expecting a list of commands that will be run in the terminal sequentially. 
+Important: When reading the document, you will only use terminal commands in the document exactly as they are written 
+    in the document even if there are typos or errors.
+Important: Do not use commands that are not in the document, unless asked to do so explicitly 
 
 {}
 """
@@ -41,7 +44,8 @@ Important: The user is usually expecting a list of commands that will be run in 
     INSTRUCTIONS_GET_GOALS = """
 You are an expert in Quality Control for documentation. You  are assisting a software 
 program to check that the tasks described in the following document actually work. NEVER USE MARKDOWN. JUST
-PROVIDE JSON THAT CAN BE USED IN A SOFTWARE PROGRAM.
+PROVIDE JSON THAT CAN BE USED IN A SOFTWARE PROGRAM. The goals should be high level tasks that a user would want
+to achieve. Do not make too many goals.
 
 Respond using json like:
 {

@@ -147,7 +147,7 @@ commands listed in the document support completing this task, return an empty li
         run_result = self.do_run(message, OpenAIAgent.INSTRUCTIONS_RESPONSE)
         return run_result
 
-    def fetch_modify_file_commands(self, filepath: str, command_report: CommandReport) -> str:
+    def fetch_modify_file_commands(self, filepath: str, command_report: CommandReport) -> list[str]:
         message = f"I have this output from trying to accomplish my goal:\n {command_report.insights}\n"
         message += f"Here is the file:\n {filepath}\n"
         message += f"Can you write a sed command to fix this issue in the file?"
@@ -155,9 +155,10 @@ commands listed in the document support completing this task, return an empty li
         with open(filepath, "r") as f:
             document = f.read()
             instructions = OpenAIAgent.INSTRUCTIONS_FETCH_MODIFY_FILE_COMMANDS.format(document)
-            run_result = self.do_run(message, instructions)
+            raw_response = self.do_run(message, instructions)
+            commands = json.loads(raw_response)["commands"]  # should be a list. TODO: validate?
 
-        return run_result
+        return commands
 
     def close(self):
         self.client.beta.assistants.delete(self.assistant.id)

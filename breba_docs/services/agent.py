@@ -48,3 +48,19 @@ class Agent(ABC):
         return:
             str: input for a prompt or empty string if no input is expected
         """
+        pass
+
+    @abstractmethod
+    def fetch_modify_file_commands(self, filepath: str, command_report: CommandReport) -> list[str]:
+        """
+        Given a command report, and the text of a document, come up with terminal commands to modify a file at the
+        given filepath. The commands should be able to be run in sequence to modify the file.
+
+        Args: filepath (str): The path to the file to modify. command_report (CommandReport): A command report
+        containing information about the command that was run and the output of that command. document (str): The
+        text of the document from which we are fetching commands.
+
+        Returns:
+            list[str]: A list of terminal commands to modify the file at the given filepath.
+        """
+        pass

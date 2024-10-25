@@ -1,4 +1,5 @@
 import json
+import os
 
 from openai import OpenAI
 
@@ -58,6 +59,23 @@ Respond using json like:
 }
 """
 
+    INSTRUCTIONS_FETCH_MODIFY_FILE_COMMANDS = """
+You are an expert in Quality Control for documentation. You are 
+assisting a software program to correct issues in the documentation.
+
+IMPORTANT: NEVER RETURN MARKDOWN. YOU WILL RETURN TEXT WITHOUT SPECIAL FORMATTING. 
+Important: Return only the commands to run because your response will be used by a software program to run these
+   commands in the terminal.
+
+You will respond with a json list that contains a field called "commands". 
+
+When generating commands to modify the file, change the entire line in the file. Do not simply replace one word.
+
+
+Here is the document:
+{}
+"""
+
     def __init__(self):
         self.client = OpenAI()
         self.assistant = self.client.beta.assistants.create(
@@ -83,7 +101,9 @@ Respond using json like:
         run = self.client.beta.threads.runs.create_and_poll(
             thread_id=thread.id,
             assistant_id=self.assistant.id,
-            instructions=instructions
+            instructions=instructions,
+            temperature=0.0,
+            top_p=1.0,
         )
 
         if run.status == 'completed':
@@ -125,6 +145,18 @@ commands listed in the document support completing this task, return an empty li
                    "If the program is expecting input, what should it be?\n")
         message += text
         run_result = self.do_run(message, OpenAIAgent.INSTRUCTIONS_RESPONSE)
+        return run_result
+
+    def fetch_modify_file_commands(self, filepath: str, command_report: CommandReport) -> str:
+        message = f"I have this output from trying to accomplish my goal:\n {command_report.insights}\n"
+        message += f"Here is the file:\n {filepath}\n"
+        message += f"Can you write a sed command to fix this issue in the file?"
+        print("WORKING DIR: ", os.getcwd())
+        with open(filepath, "r") as f:
+            document = f.read()
+            instructions = OpenAIAgent.INSTRUCTIONS_FETCH_MODIFY_FILE_COMMANDS.format(document)
+            run_result = self.do_run(message, instructions)
+
         return run_result
 
     def close(self):

@@ -62,7 +62,8 @@ def run(debug_server=False):
 
         if document:
             # TODO: Start container only when special argument is provided
-            started_container = container_setup(debug_server)
+            started_container = container_setup(document, debug=debug_server)
+
             analyzer = DocumentAnalyzer()
             analyzer.analyze(document)
         else:

@@ -48,6 +48,7 @@ def execute_command(command, container):
 
 @pytest.fixture
 def container():
+    document = "# Sample\n\nHello"
     # To Run the container from terminal from breba_docs package dir
     # docker run -d -it \
     #   -v $(pwd)/breba_docs/socket_server:/usr/src/socket_server \
@@ -55,7 +56,7 @@ def container():
     #   -p 44440:44440 \
     #   python:3 \
     #   /bin/bash
-    started_container = container_setup(dev=True)
+    started_container = container_setup(document, dev=True)
 
     yield started_container
     started_container.stop()
@@ -108,3 +109,13 @@ def test_multiple_connections(container):
         response = client.send_message(json.dumps(command))
     assert "/usr/src/test2" in response
     assert "No such file or directory" not in response
+
+
+@pytest.mark.integration
+def test_container_has_document(container):
+    time.sleep(2)
+    with Client(("127.0.0.1", PORT)) as client:
+        command = {"command": 'cat README.md'}
+        response = client.send_message(json.dumps(command))
+    assert "# Sample" in response
+    assert "\nHello" in response

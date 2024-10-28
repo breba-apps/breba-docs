@@ -4,7 +4,7 @@ import os
 from openai import OpenAI
 
 from breba_docs.services.agent import Agent
-from breba_docs.services.output_analyzer_result import CommandReport
+from breba_docs.services.reports import CommandReport
 
 
 class OpenAIAgent(Agent):

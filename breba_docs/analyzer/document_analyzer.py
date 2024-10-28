@@ -2,9 +2,8 @@ import json
 
 from breba_docs.analyzer.reporter import Reporter
 from breba_docs.services.agent import Agent
-from breba_docs.services.goal_report import GoalReport, DocumentReport
+from breba_docs.services.reports import GoalReport, DocumentReport, CommandReport
 from breba_docs.services.openai_agent import OpenAIAgent
-from breba_docs.services.output_analyzer_result import CommandReport
 from breba_docs.socket_server.client import Client
 
 

@@ -1,6 +1,6 @@
 import pytest
 
-from breba_docs.services.output_analyzer_result import CommandReport
+from breba_docs.services.reports import CommandReport
 
 
 def test_agent_output_from_string():

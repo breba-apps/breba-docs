@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from breba_docs.services.output_analyzer_result import CommandReport
+from breba_docs.services.reports import CommandReport
 
 
 class Agent(ABC):

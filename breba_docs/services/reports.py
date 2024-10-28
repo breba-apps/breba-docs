@@ -20,3 +20,22 @@ class CommandReport:
             "success": True,
             "insights": "The cloning process completed successfully with all objects received and deltas resolved."
         })
+
+
+@dataclass
+class GoalReport:
+    goal_name: str
+    goal_description: str
+    command_reports: list[CommandReport]
+
+
+@dataclass
+class DocumentReport:
+    file: str
+    goal_reports: list[GoalReport]
+
+
+@dataclass
+class ProjectReport:
+    project: str
+    file_reports: list[DocumentReport]

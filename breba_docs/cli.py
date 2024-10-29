@@ -1,5 +1,6 @@
 import argparse
 import os
+import shutil
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -26,6 +27,15 @@ def parse_arguments():
     return parser.parse_args()
 
 
+def clean_data():
+    data_dir = Path("data")
+
+    if data_dir.exists() and data_dir.is_dir():
+        shutil.rmtree(data_dir)
+
+    data_dir.mkdir(parents=True, exist_ok=True)
+
+
 def get_document(retries=3):
     print(f"\nCurrent working directory is: {os.getcwd()}")
 
@@ -35,6 +45,7 @@ def get_document(retries=3):
     location = input(f"Provide URL to git repo or an path to file:")
 
     if Path(location).is_file():
+        clean_data()
         with open(location, "r") as file:
             # We will now copy this file into the data folder
             filepath = Path("data") / Path(location).name
@@ -43,6 +54,7 @@ def get_document(retries=3):
 
             return document
     elif is_valid_url(location):
+        clean_data()
         # TODO: log errors
         repo: Repo = Repo.clone_from(location, "data")
         filepath = Path(repo.working_dir) / "README.md"

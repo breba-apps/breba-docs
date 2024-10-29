@@ -3,7 +3,6 @@ from pathlib import Path
 import git
 import pytest
 from unittest.mock import mock_open, MagicMock
-import requests
 
 from breba_docs.cli import run
 

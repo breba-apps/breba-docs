@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import git
 import pytest
 from unittest.mock import mock_open, MagicMock
 import requests
@@ -13,13 +14,12 @@ def mock_container(mocker):
 
 
 @pytest.fixture
-def mock_requests(mocker):
+def mock_repo(mocker):
     # Patching requests.get to return a mock response
-    mock_response = mocker.MagicMock(spec=requests.Response)
-    mock_response.text = "Mock document content"
-    mock_requests = mocker.patch('breba_docs.cli.requests')
-    mock_requests.get.return_value = mock_response
-    return mock_requests
+    mock_repo = mocker.MagicMock(spec=git.Repo)
+    mock_repo.working_dir = '/path/to/mock/repo'
+    mock_git_repo = mocker.patch('breba_docs.cli.Repo')
+    mock_git_repo.clone_from = mocker.MagicMock(return_value=mock_repo)
 
 
 @pytest.fixture
@@ -34,15 +34,15 @@ def mock_document_analyzer(mocker):
     return mock_analyze_instance
 
 
-def test_run_with_valid_url(mock_requests, mock_container, mock_document_analyzer, mocker):
+def test_run_with_valid_url(mock_repo, mock_container, mock_document_analyzer, mocker):
     # Test case where the user provides a valid URL
 
     mocker.patch('builtins.input', return_value="https://valid.url/to/document.md")
+    open_mock = mocker.patch('builtins.open', mock_open(read_data="Mock document content"))
 
     run()
 
-    # Check that requests.get was called to fetch the document
-    mock_requests.get.assert_called_once_with("https://valid.url/to/document.md")
+    open_mock.assert_called_with(Path('/path/to/mock/repo/README.md'), "r")
 
     # Assert that the analyze function was called with the correct arguments
     mock_document_analyzer.analyze.assert_called_once()

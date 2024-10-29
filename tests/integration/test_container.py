@@ -109,13 +109,3 @@ def test_multiple_connections(container):
         response = client.send_message(json.dumps(command))
     assert "/usr/src/test2" in response
     assert "No such file or directory" not in response
-
-
-@pytest.mark.integration
-def test_container_has_document(container):
-    time.sleep(2)
-    with Client(("127.0.0.1", PORT)) as client:
-        command = {"command": 'cat README.md'}
-        response = client.send_message(json.dumps(command))
-    assert "# Sample" in response
-    assert "\nHello" in response

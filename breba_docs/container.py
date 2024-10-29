@@ -38,7 +38,7 @@ def start_logs_thread(container):
     return logs_thread
 
 
-def container_setup(document, debug=False, dev=False):
+def container_setup(debug=False, dev=False):
     client = docker.from_env()
     breba_image = os.environ.get("BREBA_IMAGE", "breba-image")
     print(f"Setting up the container with image: {breba_image}")
@@ -57,8 +57,6 @@ def container_setup(document, debug=False, dev=False):
         ports={f'{PORT}/tcp': PORT},
         volumes=volumes
     )
-
-    write_document_to_container(container, document)
 
     if debug:
         start_logs_thread(container)  # no need to join because it should just run to the end of the process

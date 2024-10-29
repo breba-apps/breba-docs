@@ -2,16 +2,14 @@ import argparse
 import os
 from pathlib import Path
 
-import requests
-
 from dotenv import load_dotenv
 from urllib.parse import urlparse
 
+from git import Repo
+
 from breba_docs.analyzer.document_analyzer import DocumentAnalyzer
 from breba_docs.container import container_setup
-
-DEFAULT_LOCATION = ("https://gist.githubusercontent.com/yasonk/16990780a6b6e46163d1caf743f38e8f/raw"
-                    "/6d5fbb7e7053642f45cb449ace1adb4eea38e6de/gistfile1.txt")
+from breba_docs.services.document import Document
 
 
 def is_valid_url(url):
@@ -19,11 +17,6 @@ def is_valid_url(url):
     parsed_url = urlparse(url)
 
     return all([parsed_url.scheme, parsed_url.netloc])
-
-
-def is_file_path(file_path):
-    path = Path(file_path)
-    return path.is_file()
 
 
 def parse_arguments():
@@ -39,15 +32,22 @@ def get_document(retries=3):
     if retries == 0:
         return None
 
-    doc_location = input(f"Provide URL to doc file or an absolute path:") or DEFAULT_LOCATION
+    location = input(f"Provide URL to git repo or an path to file:")
 
-    if is_file_path(doc_location):
-        with open(doc_location, "r") as file:
-            return file.read()
-    elif is_valid_url(doc_location):
-        response = requests.get(doc_location)
-        # TODO: if response is not md file produce error message
-        return response.text
+    if Path(location).is_file():
+        with open(location, "r") as file:
+            # We will now copy this file into the data folder
+            filepath = Path("data") / Path(location).name
+            document = Document(file.read(), filepath)
+            document.persist()
+
+            return document
+    elif is_valid_url(location):
+        # TODO: log errors
+        repo: Repo = Repo.clone_from(location, "data")
+        filepath = Path(repo.working_dir) / "README.md"
+        with open(filepath, "r") as file:
+            return Document(file.read(), filepath)
     else:
         print(f"Not a valid URL or local file path. {retries - 1} retries remaining.")
         return get_document(retries - 1)
@@ -62,10 +62,10 @@ def run(debug_server=False):
 
         if document:
             # TODO: Start container only when special argument is provided
-            started_container = container_setup(document, debug=debug_server)
+            started_container = container_setup(debug=debug_server)
 
             analyzer = DocumentAnalyzer()
-            analyzer.analyze(document)
+            analyzer.analyze(document.content)
         else:
             print("No document provided. Exiting...")
     finally:

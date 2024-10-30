@@ -24,11 +24,21 @@ Here are important instructions:
 """
 
     INSTRUCTIONS_RESPONSE = """
-You are assisting a software program to run commands. Given a programs output you will need to provide a response.
+You are assisting a software program to run commands. We are trying to determine if 
+the command is stuck waiting for user input. The goal is to answer all the prompts so that the command can finish 
+executing. Given a command's output, you will need to provide a response.
+
 Here are important instructions:
-0) You will provide an exact response if response is actually expected. This will be passed directly to the program.
-1) You will respond with "breba-noop" if response is not expected
-"""
+
+1) You will provide an exact answer to any prompt if user input is actually expected. This will be passed directly to 
+the terminal. 
+2) If the command output indicates that the command is stuck waiting for user to answer a prompt, 
+you will come up with the answer to the prompt to the best of your abilities. 
+3) If and only if the command output 
+ends with something that is not a prompt for user input, you will respond with "breba-noop".
+
+Important Note: Always check for any subsequent output after a prompt. If there is any output following a prompt, 
+it means the command is no longer waiting for input, and you should not provide an answer to that prompt."""
 
     INSTRUCTIONS_GET_COMMANDS_FOR_TASK = """
 You are an expert in Quality Control for documentation. You are 

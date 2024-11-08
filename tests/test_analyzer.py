@@ -5,12 +5,14 @@ from breba_docs.analyzer.document_analyzer import DocumentAnalyzer
 from breba_docs.services.agent import Agent
 from breba_docs.socket_server.client import Client
 
+GOALS = [{"name": "Install nodestream", "description": "Install nodestream"},
+         {"name": "Install nodestream2", "description": "Install nodestream2"}]
+
 
 @pytest.fixture
 def mock_agent(mocker):
     mock_agent = mocker.MagicMock(spec=Agent)
-    mock_agent.fetch_goals.return_value = [{"name": "Install nodestream", "description": "Install nodestream"},
-                                           {"name": "Install nodestream2", "description": "Install nodestream2"}]
+    mock_agent.fetch_goals.return_value = GOALS
     mock_agent.fetch_commands.return_value = ['command1', 'command2']
     mock_agent.provide_input.return_value = "breba-noop"
     return mock_agent
@@ -28,7 +30,7 @@ def mock_client(mocker):
 
 def test_analyze(mocker, mock_agent, mock_client):
     # Mocking the Client class to return the mock_client
-    mocker.patch('breba_docs.analyzer.document_analyzer.Client', return_value=mock_client)
+    mocker.patch('breba_docs.services.command_executor.Client', return_value=mock_client)
     mocker.patch('breba_docs.analyzer.document_analyzer.OpenAIAgent', return_value=mock_agent)
 
     doc = "first run echo 'command1', then run echo 'command2'"
@@ -48,6 +50,6 @@ def test_analyze(mocker, mock_agent, mock_client):
         mocker.call('response2')
     ], any_order=False)
 
-    # Check that the Client context was used
-    assert mock_client.__enter__.call_count == 2
-    assert mock_client.__exit__.call_count == 2
+    # We should open new client session for each goal to execute related commands in own terminal session
+    assert mock_client.__enter__.call_count == len(GOALS)
+    assert mock_client.__exit__.call_count == len(GOALS)

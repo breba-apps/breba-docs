@@ -1,5 +1,3 @@
-import json
-
 import pytest
 
 from breba_docs.services.agent import CommandReport

@@ -1,5 +1,11 @@
 import abc
 import json
+import os
+import shlex
+import time
+import uuid
+
+import pexpect
 
 from breba_docs.services.agent import Agent
 from breba_docs.services.reports import CommandReport
@@ -10,6 +16,71 @@ class CommandExecutor(abc.ABC):
     @abc.abstractmethod
     def execute_commands_sync(self, command: [str]) -> list[CommandReport]:
         pass
+
+
+def collect_output(process, command_end_marker: str):
+    command_output = ""
+    while True:
+        try:
+            time.sleep(0.5)
+            output = process.read_nonblocking(1024, timeout=2)
+            command_output += output
+            # Does this return bytes or a string?
+            if command_end_marker in output:
+                print("Breaking on end marker")
+                break
+        except pexpect.exceptions.TIMEOUT:
+            # ask agent if input is needed
+            break
+        except pexpect.exceptions.EOF as e:
+            print("End of process output.")
+            break
+    return command_output
+
+
+class LocalCommandExecutor(CommandExecutor):
+
+    def __init__(self, agent: Agent):
+        self.agent = agent
+
+    def get_input_text(self, text: str):
+        instruction = self.agent.provide_input(text)
+        if instruction == "breba-noop":
+            return None
+        elif instruction:
+            return instruction
+
+    def execute_commands_sync(self, commands: list[str]) -> list[CommandReport]:
+        process = pexpect.spawn('/bin/bash', encoding='utf-8', env={"PS1": ""}, echo=False)
+
+        # clear any messages that show up when starting the shell
+        process.read_nonblocking(1024, timeout=0.5)
+        report = []
+        for command in commands:
+            # basically echo the command, but have to escape quotes first
+            escaped_command = shlex.quote(command)
+            process.sendline(f"echo {escaped_command}\n") # TODO: check if can use echo
+
+            command_id = str(uuid.uuid4())
+            command_end_marker = f"Completed {command_id}"
+            command = f"{command} && echo {command_end_marker}"
+            process.sendline(command)
+
+            command_output = ""
+            while True:
+                new_output = collect_output(process, command_end_marker)
+                command_output += new_output
+                if new_output:
+                    input_text = self.get_input_text(new_output)
+                    if input_text:
+                        command_output += input_text + os.linesep
+                        process.sendline(input_text)
+                else:
+                    break
+            agent_output = self.agent.analyze_output(command_output)
+            report.append(agent_output)
+
+        return report
 
 
 class ContainerCommandExecutor(CommandExecutor):

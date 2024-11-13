@@ -37,6 +37,7 @@ pytest = "^8.3.2"
 pythonpath = [
   "breba_docs"
 ]
+addopts = "--ignore=sample_project"
 
 markers = [
     "integration: marks the test as an integration test (deselect with '-m \"not integration\"')",

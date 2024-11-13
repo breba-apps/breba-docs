@@ -24,6 +24,12 @@ def parse_arguments():
     # Set up command-line argument parsing
     parser = argparse.ArgumentParser(description="Breba CLI")
     parser.add_argument("--debug-server", action="store_true", help="Enable logging from the server.")
+    parser.add_argument(
+        "project",
+        nargs="?",
+        default=".",
+        help="Specify the project path (use '.' for the current folder or provide a folder path)."
+    )
     return parser.parse_args()
 
 
@@ -65,13 +71,18 @@ def get_document(retries=3):
         return get_document(retries - 1)
 
 
-def run(debug_server=False):
+def setup_project(project_path):
+    if not os.path.exists(project_path):
+        # Create the directory if it does not exist
+        os.makedirs(project_path)
+        print(f"Directory '{project_path}' created.")
+
+    os.chdir(project_path)
+
+
+def run_analyzer(document, debug_server=False):
     started_container = None
-    load_dotenv()
-
     try:
-        document = get_document()
-
         if document:
             # TODO: Start container only when special argument is provided
             started_container = container_setup(debug=debug_server)
@@ -86,6 +97,15 @@ def run(debug_server=False):
             started_container.remove()
 
 
-if __name__ == "__main__":
+def run():
     args = parse_arguments()
-    run(args.debug_server)
+    load_dotenv()
+    # TODO: currently get_document implicitly depends on setup_project
+    #  But we should have a project class that can persist document
+    setup_project(args.project)
+    document = get_document()
+    run_analyzer(document, args.debug_server)
+
+
+if __name__ == "__main__":
+    run()

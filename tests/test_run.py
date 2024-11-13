@@ -4,12 +4,17 @@ import git
 import pytest
 from unittest.mock import mock_open, MagicMock
 
-from breba_docs.cli import run
+from breba_docs.cli import start_cli
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def mock_container(mocker):
     mocker.patch('breba_docs.cli.container_setup', return_value=MagicMock())
+
+
+@pytest.fixture(autouse=True)
+def mock_project_setup(mocker):
+    mocker.patch('breba_docs.cli.os', return_value=MagicMock())
 
 
 @pytest.fixture
@@ -33,13 +38,13 @@ def mock_document_analyzer(mocker):
     return mock_analyze_instance
 
 
-def test_run_with_valid_url(mock_repo, mock_container, mock_document_analyzer, mocker):
+def test_run_with_valid_url(mock_repo, mock_document_analyzer, mocker):
     # Test case where the user provides a valid URL
 
     mocker.patch('builtins.input', return_value="https://valid.url/to/document.md")
     open_mock = mocker.patch('builtins.open', mock_open(read_data="Mock document content"))
 
-    run()
+    start_cli("sample_project")
 
     open_mock.assert_called_with(Path('/path/to/mock/repo/README.md'), "r")
 
@@ -47,7 +52,7 @@ def test_run_with_valid_url(mock_repo, mock_container, mock_document_analyzer, m
     mock_document_analyzer.analyze.assert_called_once()
 
 
-def test_run_with_valid_file_path(mocker, mock_document_analyzer, mock_container):
+def test_run_with_valid_file_path(mocker, mock_document_analyzer):
     # Test case where the user provides a valid local file path
     current_dir = Path(__file__).parent
     real_file_path = str(current_dir / "sample.md")  # use a valid file path
@@ -57,7 +62,7 @@ def test_run_with_valid_file_path(mocker, mock_document_analyzer, mock_container
     open_mock = mocker.patch('builtins.open', mock_open(read_data="Mock document content"))
 
     # Run the program
-    run()
+    start_cli("sample_project")
 
     # Assert that the file was opened and read
     open_mock.assert_any_call(real_file_path, "r")
@@ -72,7 +77,7 @@ def test_run_with_invalid_input(mocker, mock_document_analyzer):
     print_mock = mocker.patch('builtins.print')
 
     # Run the program
-    run()
+    start_cli("sample_project")
 
     print_mock.assert_any_call("Not a valid URL or local file path. 1 retries remaining.")
     print_mock.assert_any_call("No document provided. Exiting...")

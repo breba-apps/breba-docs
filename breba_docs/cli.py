@@ -80,7 +80,7 @@ def setup_project(project_path):
     os.chdir(project_path)
 
 
-def run_analyzer(document, debug_server=False):
+def run_analyzer(document, debug_server):
     started_container = None
     try:
         if document:
@@ -97,14 +97,18 @@ def run_analyzer(document, debug_server=False):
             started_container.remove()
 
 
-def run():
-    args = parse_arguments()
+def start_cli(project_path, debug_server=False):
     load_dotenv()
     # TODO: currently get_document implicitly depends on setup_project
     #  But we should have a project class that can persist document
-    setup_project(args.project)
+    setup_project(project_path)
     document = get_document()
-    run_analyzer(document, args.debug_server)
+    run_analyzer(document, debug_server)
+
+
+def run():
+    args = parse_arguments()
+    start_cli(args.project, args.debug_server)
 
 
 if __name__ == "__main__":

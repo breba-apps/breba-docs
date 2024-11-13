@@ -23,11 +23,11 @@ To install and run breba-docs, run the following commands:
 
 ```bash
 pip install breba-docs
-breba_docs
+breba-docs
 ```
 
 Then you will need to provide location of a documentation file. 
-For example: `breba_docs/sample_doc.md`
+For example: `sample_project/sample.md`
 
 The software will then analyze the documentation and run the commands found in the documentation
 inside a docker container with python installed.

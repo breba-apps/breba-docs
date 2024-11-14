@@ -48,7 +48,6 @@ def execute_command(command, container):
 
 @pytest.fixture
 def container():
-    document = "# Sample\n\nHello"
     # To Run the container from terminal from breba_docs package dir
     # docker run -d -it \
     #   -v $(pwd)/breba_docs/socket_server:/usr/src/socket_server \
@@ -56,7 +55,7 @@ def container():
     #   -p 44440:44440 \
     #   python:3 \
     #   /bin/bash
-    started_container = container_setup(document, dev=True)
+    started_container = container_setup(dev=True)
 
     yield started_container
     started_container.stop()

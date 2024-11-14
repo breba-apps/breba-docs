@@ -44,6 +44,7 @@ def container_setup(debug=False, dev=False):
     print(f"Setting up the container with image: {breba_image}")
     volumes = {}
     if dev:
+        # This will run listener code from local machine overriding the breba-docs directory on the container
         cwd = os.getcwd()
         volumes = {
             cwd: {'bind': '/usr/src/breba-docs', 'mode': 'rw'},

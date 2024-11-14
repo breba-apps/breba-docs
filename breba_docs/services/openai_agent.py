@@ -1,5 +1,6 @@
 import json
 import os
+from pathlib import Path
 
 from openai import OpenAI
 
@@ -206,7 +207,7 @@ commands listed in the document support completing this task, return an empty li
                 return prompt_answer
         return "breba-noop"
 
-    def fetch_modify_file_commands(self, filepath: str, command_report: CommandReport) -> list[str]:
+    def fetch_modify_file_commands(self, filepath: Path, command_report: CommandReport) -> list[str]:
         message = f"I have this output from trying to accomplish my goal:\n {command_report.insights}\n"
         message += f"Here is the file:\n {filepath}\n"
         message += f"Can you write a sed command to fix this issue in the file?"

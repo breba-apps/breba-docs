@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from pathlib import Path
 
 from breba_docs.services.reports import CommandReport
 
@@ -51,7 +52,7 @@ class Agent(ABC):
         pass
 
     @abstractmethod
-    def fetch_modify_file_commands(self, filepath: str, command_report: CommandReport) -> list[str]:
+    def fetch_modify_file_commands(self, filepath: Path, command_report: CommandReport) -> list[str]:
         """
         Given a command report, and the text of a document, come up with terminal commands to modify a file at the
         given filepath. The commands should be able to be run in sequence to modify the file.

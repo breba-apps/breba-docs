@@ -44,6 +44,7 @@ class LocalCommandExecutor(CommandExecutor):
         self.agent = agent
 
     def get_input_text(self, text: str):
+        # TODO: should probably throw this out of executor and handle input in the Executor caller
         instruction = self.agent.provide_input(text)
         if instruction == "breba-noop":
             return None

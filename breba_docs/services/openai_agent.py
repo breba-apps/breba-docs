@@ -86,6 +86,36 @@ Here is the document:
 {}
 """
 
+    INPUT_FIRST_COMMAND_SYSTEM_INSTRUCTION = """
+You are assisting a software program to run commands. We are trying to determine if 
+the command is stuck waiting for user input. The goal is to answer all the prompts so that the command can finish 
+executing.
+
+You will answer with minimal text and not use formatting or markdown.
+"""
+
+    INPUT_FIRST_MESSAGE = """
+    Does the last sentence in the command output contain a prompt asking the user for input in order to complete the command execution? 
+    Answer with "Yes" if the last thing in the command output is a prompt asking the user for some input.
+    Answer with "No" if the last thing in the command output is not a user prompt:
+    
+    Important: If there is additional text after the user prompt, that means the prompt was answered your answer must be "No"
+    """
+
+    INPUT_FIRST_MESSAGE_VERIFY = """
+    Is the user prompt the last sentence of the command output? Answer only with "Yes" or "No"
+    """
+
+    INPUT_FOLLOW_UP_COMMAND_INSTRUCTION = """You need to come up with the right answer to this prompt. To the best of your 
+abilities what should be put into the terminal to continue executing this command? 
+Reply with exact response that will go into the terminal.
+
+You will answer with minimal text and not use formatting or markdown.
+"""
+
+    INPUT_FOLLOW_UP_MESSAGE = """What should the response in the terminal be? Provide the exact answer to put into the
+    terminal in order to answer the prompt."""
+
     def __init__(self):
         self.client = OpenAI()
         self.assistant = self.client.beta.assistants.create(
@@ -93,6 +123,7 @@ Here is the document:
             instructions=OpenAIAgent.INSTRUCTIONS_GENERAL,
             model="gpt-4o-mini"
         )
+        self.thread = None
 
     def __enter__(self):
         return self
@@ -100,16 +131,28 @@ Here is the document:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
 
-    def do_run(self, message, instructions):
-        thread = self.client.beta.threads.create()
+    def get_last_message(self):
+        messages = self.client.beta.threads.messages.list(
+            thread_id=self.thread.id
+        )
+
+        return messages.data[0].content[0].text.value
+
+    def do_run(self, message, instructions, new_thread=True):
+        print(f"Message: {message}")
+        print(f"Instructions: {instructions}")
+
+        if new_thread:
+            self.thread = self.client.beta.threads.create()
+
         self.client.beta.threads.messages.create(
-            thread_id=thread.id,
+            thread_id=self.thread.id,
             role="user",
             content=message
         )
 
         run = self.client.beta.threads.runs.create_and_poll(
-            thread_id=thread.id,
+            thread_id=self.thread.id,
             assistant_id=self.assistant.id,
             instructions=instructions,
             temperature=0.0,
@@ -117,11 +160,9 @@ Here is the document:
         )
 
         if run.status == 'completed':
-            messages = self.client.beta.threads.messages.list(
-                thread_id=thread.id
-            )
-
-            return messages.data[0].content[0].text.value
+            agent_response = self.get_last_message()
+            print(f"Agent Response: {agent_response}")
+            return agent_response
         else:
             print(f"OpenAI run.status: {run.status}")
 
@@ -148,14 +189,22 @@ commands listed in the document support completing this task, return an empty li
     def analyze_output(self, text: str) -> CommandReport:
         message = "Here is the output after running the commands. What is your conclusion? \n"
         message += text
-        return CommandReport.from_string(self.do_run(message, OpenAIAgent.INSTRUCTIONS_ANALYZE_OUTPUT))
+        analysis = self.do_run(message, OpenAIAgent.INSTRUCTIONS_ANALYZE_OUTPUT)
+        return CommandReport.from_string(analysis)
 
     def provide_input(self, text: str) -> str:
-        message = ("Here is the output after running the commands. "
-                   "If the program is expecting input, what should it be?\n")
-        message += text
-        run_result = self.do_run(message, OpenAIAgent.INSTRUCTIONS_RESPONSE)
-        return run_result
+        message = OpenAIAgent.INPUT_FIRST_MESSAGE + "\n" + text
+        has_prompt = self.do_run(message, OpenAIAgent.INPUT_FIRST_COMMAND_SYSTEM_INSTRUCTION)
+        if has_prompt == "Yes":
+            prompt_verified = self.do_run(OpenAIAgent.INPUT_FIRST_MESSAGE_VERIFY,
+                                          OpenAIAgent.INPUT_FIRST_COMMAND_SYSTEM_INSTRUCTION,
+                                          False)
+            if prompt_verified == "Yes":
+                prompt_answer = self.do_run(OpenAIAgent.INPUT_FOLLOW_UP_MESSAGE,
+                                            OpenAIAgent.INPUT_FOLLOW_UP_COMMAND_INSTRUCTION,
+                                            False)
+                return prompt_answer
+        return "breba-noop"
 
     def fetch_modify_file_commands(self, filepath: str, command_report: CommandReport) -> list[str]:
         message = f"I have this output from trying to accomplish my goal:\n {command_report.insights}\n"

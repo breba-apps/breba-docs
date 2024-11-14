@@ -46,3 +46,68 @@ def test_fetch_modify_file_commands(mocker, openai_agent):
     commands = openai_agent.fetch_modify_file_commands(filepath, report)
     expected_command = "sed -i 's/nodestream run simple -v/nodestream run sample -v/' ./tests/integration/fixtures/typo_doc.md"
     assert commands[0] == expected_command
+
+
+@pytest.mark.integration
+def test_input_required(mocker, openai_agent):
+    output = """(.venv) pip uninstall nodestream
+(.venv) (.venv)
+Found existing installation: nodestream 0.13.2
+
+Uninstalling nodestream-0.13.2:
+
+Would remove:
+
+/usr/src/.venv/bin/nodestream
+/usr/src/.venv/lib/python3.12/site-packages/nodestream-0.13.2.dist-info/*
+/usr/src/.venv/lib/python3.12/site-packages/nodestream/*
+
+Proceed (Y/n)?"""
+    command_input = openai_agent.provide_input(output)
+    assert command_input == "Y"
+
+
+@pytest.mark.integration
+def test_input_already_provided(mocker, openai_agent):
+    output = """(.venv) pip uninstall nodestream
+(.venv) (.venv)
+Found existing installation: nodestream 0.13.2
+
+Uninstalling nodestream-0.13.2:
+
+Would remove:
+
+/usr/src/.venv/bin/nodestream
+/usr/src/.venv/lib/python3.12/site-packages/nodestream-0.13.2.dist-info/*
+/usr/src/.venv/lib/python3.12/site-packages/nodestream/*
+
+Proceed (Y/n)?
+Completed 91b16e7e-8ebd-49cc-8bc3-566f28429ae9
+"""
+
+    command_input = openai_agent.provide_input(output)
+    assert command_input == "breba-noop"
+
+
+@pytest.mark.integration
+def test_input_in_the_middle(mocker, openai_agent):
+    output = """(.venv) pip uninstall nodestream
+(.venv) (.venv)
+Found existing installation: nodestream 0.13.2
+
+Uninstalling nodestream-0.13.2:
+
+Would remove:
+
+/usr/src/.venv/bin/nodestream
+/usr/src/.venv/lib/python3.12/site-packages/nodestream-0.13.2.dist-info/*
+/usr/src/.venv/lib/python3.12/site-packages/nodestream/*
+
+Proceed (Y/n)?
+Requirement already satisfied: nodestream in ./.venv/lib/python3.12/site-packages (0.13.2)
+Requirement already satisfied: Jinja2<4,>=3 in ./.venv/lib/python3.12/site-packages (from nodestream) (3.1.4)
+Requirement already satisfied: boto3<2.0.0,>=1.34.127 in ./.venv/lib/python3.12/site-packages (from nodestream) (1.35.50)
+"""
+    command_input = openai_agent.provide_input(output)
+    assert command_input == "breba-noop"
+

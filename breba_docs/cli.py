@@ -80,7 +80,7 @@ def setup_project(project_path):
     os.chdir(project_path)
 
 
-def run_analyzer(document, debug_server):
+def run_analyzer(document: Document, debug_server):
     started_container = None
     try:
         if document:
@@ -88,7 +88,7 @@ def run_analyzer(document, debug_server):
             started_container = container_setup(debug=debug_server)
 
             analyzer = DocumentAnalyzer()
-            analyzer.analyze(document.content)
+            analyzer.analyze(document)
         else:
             print("No document provided. Exiting...")
     finally:

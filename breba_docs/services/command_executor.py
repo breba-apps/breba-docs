@@ -68,6 +68,7 @@ class LocalCommandExecutor(CommandExecutor):
             process.sendline(command)
 
             command_output = ""
+            # TODO: need to separate flow between when command times out and when it has actually completed
             while True:
                 new_output = collect_output(process, command_end_marker)
                 command_output += new_output
@@ -78,8 +79,8 @@ class LocalCommandExecutor(CommandExecutor):
                         process.sendline(input_text)
                 else:
                     break
-            agent_output = self.agent.analyze_output(command_output)
-            report.append(agent_output)
+            command_report = self.agent.analyze_output(command_output)
+            report.append(command_report)
 
         return report
 

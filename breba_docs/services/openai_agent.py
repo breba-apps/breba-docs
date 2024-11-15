@@ -21,6 +21,8 @@ Here are important instructions:
 1) The user will present you with output of the commands that were just run.
 2) The command has failed if there are errors and the user did not achieve intended goal
 3) You will respond with a json that looks like this:
+4) Make sure that insights describes any errors, 
+but also any parts of the command output that may be helpful in fixing the problem. 
 {CommandReport.example_str()}
 """
 
@@ -49,6 +51,8 @@ Important: The user is usually expecting a list of commands that will be run in 
 Important: When reading the document, you will only use terminal commands in the document exactly as they are written 
     in the document even if there are typos or errors.
 Important: Do not use commands that are not in the document, unless asked to do so explicitly 
+Important: Goal and task are used interchangeably.
+
 
 {}
 """
@@ -57,7 +61,7 @@ Important: Do not use commands that are not in the document, unless asked to do 
 You are an expert in Quality Control for documentation. You  are assisting a software 
 program to check that the tasks described in the following document actually work. NEVER USE MARKDOWN. JUST
 PROVIDE JSON THAT CAN BE USED IN A SOFTWARE PROGRAM. The goals should be high level tasks that a user would want
-to achieve. Do not make too many goals.
+to achieve. You need to come up with as few goals as possible, but still cover all the commands listed the document
 
 Respond using json like:
 {
@@ -68,6 +72,26 @@ Respond using json like:
     }
   ]
 }
+
+
+Do not just make up sub goals. For example, if the documentation has instructions for Getting Started but splits that
+ into multiple steps, it is still a single goal of "getting started". Do not split the goal into sub goals of 
+ "install the software", and "run the software". For example, the below document would have only one goal of 
+ "getting started":
+
+## Getting Started
+
+Install the software using the following commands
+
+```bash
+  pip install mysoftware
+```
+
+Then run the software using these commands:
+```
+   mysoftware run
+```
+
 """
 
     INSTRUCTIONS_FETCH_MODIFY_FILE_COMMANDS = """
@@ -143,13 +167,18 @@ You will answer with minimal text and not use formatting or markdown.
         print(f"Message: {message}")
         print(f"Instructions: {instructions}")
 
+        # openAI max size of request is 256000, so we need to truncate the first part of the message
+        # in order to allow for the request to be below 256K characters.
+        max_length = 250000
+        truncated_message = message[-max_length:]
+
         if new_thread:
             self.thread = self.client.beta.threads.create()
 
         self.client.beta.threads.messages.create(
             thread_id=self.thread.id,
             role="user",
-            content=message
+            content=truncated_message
         )
 
         run = self.client.beta.threads.runs.create_and_poll(
@@ -176,6 +205,9 @@ You will answer with minimal text and not use formatting or markdown.
         return assistant_output["goals"]
 
     def fetch_commands(self, doc: str, goal: str) -> list[str]:
+        # TODO: When extracting commands, make sure that these commands are for the specific goal
+        # TODO: use json instead of csv
+        # TODO: test for returning an empty list
         message = goal + "\n"
         message += (
             """Provide a list of terminal commands that accomplish the task. This is a broad definition of 
@@ -209,6 +241,7 @@ commands listed in the document support completing this task, return an empty li
 
     def fetch_modify_file_commands(self, filepath: Path, command_report: CommandReport) -> list[str]:
         message = f"I have this output from trying to accomplish my goal:\n {command_report.insights}\n"
+        message += f"This is the command that was executed:\n {command_report.command}\n"
         message += f"Here is the file:\n {filepath}\n"
         message += f"Can you write a sed command to fix this issue in the file?"
         print("WORKING DIR: ", os.getcwd())

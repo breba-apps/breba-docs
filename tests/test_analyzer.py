@@ -1,8 +1,11 @@
 import json
+from pathlib import Path
+
 import pytest
 
 from breba_docs.analyzer.document_analyzer import DocumentAnalyzer
 from breba_docs.services.agent import Agent
+from breba_docs.services.document import Document
 from breba_docs.socket_server.client import Client
 
 GOALS = [{"name": "Install nodestream", "description": "Install nodestream"},
@@ -33,7 +36,7 @@ def test_analyze(mocker, mock_agent, mock_client):
     mocker.patch('breba_docs.services.command_executor.Client', return_value=mock_client)
     mocker.patch('breba_docs.analyzer.document_analyzer.OpenAIAgent', return_value=mock_agent)
 
-    doc = "first run echo 'command1', then run echo 'command2'"
+    doc = Document("first run echo 'command1', then run echo 'command2'", Path("README.md"))
     analyzer = DocumentAnalyzer()
     analyzer.analyze(doc)
 

@@ -7,7 +7,7 @@ import uuid
 
 import pexpect
 
-from breba_docs.services.agent import Agent
+from breba_docs.agent.agent import Agent
 from breba_docs.services.reports import CommandReport
 from breba_docs.socket_server.client import Client
 

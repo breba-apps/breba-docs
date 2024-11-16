@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from breba_docs.analyzer.document_analyzer import DocumentAnalyzer
-from breba_docs.services.agent import Agent
+from breba_docs.agent.agent import Agent
 from breba_docs.services.document import Document
 from breba_docs.socket_server.client import Client
 

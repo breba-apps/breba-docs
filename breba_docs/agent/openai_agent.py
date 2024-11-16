@@ -4,7 +4,7 @@ from pathlib import Path
 
 from openai import OpenAI
 
-from breba_docs.services.agent import Agent
+from breba_docs.agent.agent import Agent
 from breba_docs.services.reports import CommandReport
 
 

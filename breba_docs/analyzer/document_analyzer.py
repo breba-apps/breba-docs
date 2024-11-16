@@ -1,11 +1,11 @@
 import json
 
 from breba_docs.analyzer.reporter import Reporter
-from breba_docs.services.agent import Agent
+from breba_docs.agent.agent import Agent
 from breba_docs.services.command_executor import ContainerCommandExecutor, LocalCommandExecutor
 from breba_docs.services.document import Document
 from breba_docs.services.reports import GoalReport, DocumentReport
-from breba_docs.services.openai_agent import OpenAIAgent
+from breba_docs.agent.openai_agent import OpenAIAgent
 
 
 class DocumentAnalyzer:

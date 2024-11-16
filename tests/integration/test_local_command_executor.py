@@ -2,7 +2,7 @@ import pytest
 from dotenv import load_dotenv
 
 from breba_docs.services.command_executor import LocalCommandExecutor
-from breba_docs.services.openai_agent import OpenAIAgent
+from breba_docs.agent.openai_agent import OpenAIAgent
 
 
 @pytest.fixture

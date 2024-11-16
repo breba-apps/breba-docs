@@ -2,8 +2,8 @@ from pathlib import Path
 
 import pytest
 
-from breba_docs.services.agent import CommandReport
-from breba_docs.services.openai_agent import OpenAIAgent
+from breba_docs.services.reports import CommandReport
+from breba_docs.agent.openai_agent import OpenAIAgent
 from dotenv import load_dotenv
 
 

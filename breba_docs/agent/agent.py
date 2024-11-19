@@ -6,7 +6,7 @@ from breba_docs.services.reports import CommandReport
 
 class Agent(ABC):
     @abstractmethod
-    def fetch_commands(self, text: str, goal: str) -> list[str]:
+    def fetch_commands(self, text: str, goal: dict) -> list[str]:
         """
         Fetch commands from the given text.
 

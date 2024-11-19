@@ -26,6 +26,12 @@ def command_output_fail():
         return file.read()
 
 
+@pytest.fixture
+def doc():
+    with open('./tests/integration/fixtures/doc.md', 'r') as file:
+        return file.read()
+
+
 @pytest.mark.integration
 def test_analyzer_output_pass(mocker, openai_agent, command_output):
     analysis = openai_agent.analyze_output(command_output)
@@ -36,6 +42,26 @@ def test_analyzer_output_pass(mocker, openai_agent, command_output):
 def test_analyzer_output_fail(mocker, openai_agent, command_output_fail):
     analysis = openai_agent.analyze_output(command_output_fail)
     assert not analysis.success, f"Analyzer is expect to produce error in this case, but got {analysis}"
+
+
+@pytest.mark.integration
+def test_fetch_goals(mocker, openai_agent, doc):
+    goals = openai_agent.fetch_goals(doc)
+    assert any(goal['name'] == 'getting started' for goal in goals), \
+        "No goal with the name 'getting started' was found in the fetched goals."
+
+
+@pytest.mark.integration
+def test_fetch_commands(mocker, openai_agent, doc):
+    goal = {'description': 'As a user, I would like to get started with the nodestream software',
+            'name': 'getting started'}
+    commands = openai_agent.fetch_commands(doc, goal)
+    expected_commands = [
+        'pip install nodestream',
+        'nodestream new --database neo4j my_project && cd my_project',
+        'nodestream run sample -v'
+    ]
+    assert commands == expected_commands
 
 
 @pytest.mark.integration
@@ -112,4 +138,3 @@ Requirement already satisfied: boto3<2.0.0,>=1.34.127 in ./.venv/lib/python3.12/
 """
     command_input = openai_agent.provide_input(output)
     assert command_input == "breba-noop"
-

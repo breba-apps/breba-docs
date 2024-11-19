@@ -17,7 +17,7 @@ class DocumentAnalyzer:
         goal_reports: list[GoalReport] = []
         # TODO: extract function that is inside the loop called analyze goal
         for goal in goals:
-            commands = self.agent.fetch_commands(doc.content, json.dumps(goal))
+            commands = self.agent.fetch_commands(doc.content, goal)
             # create new command executor for each goal in order to run all commands in single terminal session
             command_reports = ContainerCommandExecutor(self.agent).execute_commands_sync(commands)
             goal_report = GoalReport(goal["name"], goal["description"], command_reports)

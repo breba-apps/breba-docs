@@ -13,36 +13,6 @@ class OpenAIAgent(Agent):
 You are assisting a software program to validate contents of a document.
 """
 
-    INSTRUCTIONS_ANALYZE_OUTPUT = f"""
-You are assisting a software program to validate contents of a document. After running commands from the
-documentation, the user received some output and needs help understanding the output. 
-Here are important instructions:
-0) Never return markdown. You will respond with JSON without special formatting
-1) The user will present you with output of the commands that were just run.
-2) The command has failed if there are errors and the user did not achieve intended goal
-3) You will respond with a json that looks like this:
-4) Make sure that insights describes any errors, 
-but also any parts of the command output that may be helpful in fixing the problem. 
-{CommandReport.example_str()}
-"""
-
-    INSTRUCTIONS_RESPONSE = """
-You are assisting a software program to run commands. We are trying to determine if 
-the command is stuck waiting for user input. The goal is to answer all the prompts so that the command can finish 
-executing. Given a command's output, you will need to provide a response.
-
-Here are important instructions:
-
-1) You will provide an exact answer to any prompt if user input is actually expected. This will be passed directly to 
-the terminal. 
-2) If the command output indicates that the command is stuck waiting for user to answer a prompt, 
-you will come up with the answer to the prompt to the best of your abilities. 
-3) If and only if the command output 
-ends with something that is not a prompt for user input, you will respond with "breba-noop".
-
-Important Note: Always check for any subsequent output after a prompt. If there is any output following a prompt, 
-it means the command is no longer waiting for input, and you should not provide an answer to that prompt."""
-
     INSTRUCTIONS_GET_COMMANDS_FOR_TASK = """
 You are an expert in Quality Control for documentation. You are 
 assisting a software program to create a list of terminal commands that will accomplish a given task.
@@ -204,11 +174,11 @@ You will answer with minimal text and not use formatting or markdown.
         assistant_output = json.loads(assistant_output)
         return assistant_output["goals"]
 
-    def fetch_commands(self, doc: str, goal: str) -> list[str]:
+    def fetch_commands(self, doc: str, goal: dict) -> list[str]:
         # TODO: When extracting commands, make sure that these commands are for the specific goal
         # TODO: use json instead of csv
         # TODO: test for returning an empty list
-        message = goal + "\n"
+        message = json.dumps(goal) + "\n"
         message += (
             """Provide a list of terminal commands that accomplish the task. This is a broad definition of 
 the task. Make sure to list all commands needed to accomplish this task. I am a software program that will 
@@ -220,9 +190,10 @@ commands listed in the document support completing this task, return an empty li
         return [cmd.strip() for cmd in assistant_output.split(",")]
 
     def analyze_output(self, text: str) -> CommandReport:
+        instructions = get_instructions("analyze_output", example_report=CommandReport.example_str())
         message = "Here is the output after running the commands. What is your conclusion? \n"
         message += text
-        analysis = self.do_run(message, OpenAIAgent.INSTRUCTIONS_ANALYZE_OUTPUT)
+        analysis = self.do_run(message, instructions)
         return CommandReport.from_string(analysis)
 
     def provide_input(self, text: str) -> str:
@@ -255,3 +226,9 @@ commands listed in the document support completing this task, return an empty li
 
     def close(self):
         self.client.beta.assistants.delete(self.assistant.id)
+
+
+def get_instructions(name, **kwargs):
+    filepath = Path(__file__).parent / "instructions" / f"{name}.txt"
+    with open(filepath) as file:
+        return file.read().format(**kwargs)

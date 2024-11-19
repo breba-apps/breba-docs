@@ -13,20 +13,6 @@ class OpenAIAgent(Agent):
 You are assisting a software program to validate contents of a document.
 """
 
-    INSTRUCTIONS_GET_COMMANDS_FOR_TASK = """
-You are an expert in Quality Control for documentation. You are 
-assisting a software program to create a list of terminal commands that will accomplish a given task.
-Important: Never return markdown. You will return text without special formatting.
-Important: The user is usually expecting a list of commands that will be run in the terminal sequentially. 
-Important: When reading the document, you will only use terminal commands in the document exactly as they are written 
-    in the document even if there are typos or errors.
-Important: Do not use commands that are not in the document, unless asked to do so explicitly 
-Important: Goal and task are used interchangeably.
-
-
-{}
-"""
-
     INSTRUCTIONS_GET_GOALS = """
 You are an expert in Quality Control for documentation. You  are assisting a software 
 program to check that the tasks described in the following document actually work. NEVER USE MARKDOWN. JUST
@@ -175,18 +161,12 @@ You will answer with minimal text and not use formatting or markdown.
         return assistant_output["goals"]
 
     def fetch_commands(self, doc: str, goal: dict) -> list[str]:
+        instructions = get_instructions("fetch_commands", document=doc)
         # TODO: When extracting commands, make sure that these commands are for the specific goal
         # TODO: use json instead of csv
         # TODO: test for returning an empty list
-        message = json.dumps(goal) + "\n"
-        message += (
-            """Provide a list of terminal commands that accomplish the task. This is a broad definition of 
-the task. Make sure to list all commands needed to accomplish this task. I am a software program that will 
-run these commands on a system that has little installed other than python. Do not assume any software is 
-installed. Only use the commands from the document exactly as they are written in the document. Do not modify 
-commands from the document. Do not invent new commands. Respond using a comma separated list. If there are no 
-commands listed in the document support completing this task, return an empty list.""")
-        assistant_output = self.do_run(message, OpenAIAgent.INSTRUCTIONS_GET_COMMANDS_FOR_TASK.format(doc))
+        message = f"Give me commands for this goal: {json.dumps(goal)}"
+        assistant_output = self.do_run(message, instructions)
         return [cmd.strip() for cmd in assistant_output.split(",")]
 
     def analyze_output(self, text: str) -> CommandReport:

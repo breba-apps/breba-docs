@@ -5,49 +5,13 @@ from pathlib import Path
 from openai import OpenAI
 
 from breba_docs.agent.agent import Agent
+from breba_docs.agent.instruction_reader import get_instructions
 from breba_docs.services.reports import CommandReport
 
 
 class OpenAIAgent(Agent):
     INSTRUCTIONS_GENERAL = """
 You are assisting a software program to validate contents of a document.
-"""
-
-    INSTRUCTIONS_GET_GOALS = """
-You are an expert in Quality Control for documentation. You  are assisting a software 
-program to check that the tasks described in the following document actually work. NEVER USE MARKDOWN. JUST
-PROVIDE JSON THAT CAN BE USED IN A SOFTWARE PROGRAM. The goals should be high level tasks that a user would want
-to achieve. You need to come up with as few goals as possible, but still cover all the commands listed the document
-
-Respond using json like:
-{
-  "goals": [
-    {
-      "name": "getting started",
-      "description": "As a user I would like to get started with the software"
-    }
-  ]
-}
-
-
-Do not just make up sub goals. For example, if the documentation has instructions for Getting Started but splits that
- into multiple steps, it is still a single goal of "getting started". Do not split the goal into sub goals of 
- "install the software", and "run the software". For example, the below document would have only one goal of 
- "getting started":
-
-## Getting Started
-
-Install the software using the following commands
-
-```bash
-  pip install mysoftware
-```
-
-Then run the software using these commands:
-```
-   mysoftware run
-```
-
 """
 
     INSTRUCTIONS_FETCH_MODIFY_FILE_COMMANDS = """
@@ -120,8 +84,11 @@ You will answer with minimal text and not use formatting or markdown.
         return messages.data[0].content[0].text.value
 
     def do_run(self, message, instructions, new_thread=True):
+        print("--------------------------------------------------------------------------------")
+        print(f"Instructions:\n {instructions}")
+        print("--------------------------------------------------------------------------------")
         print(f"Message: {message}")
-        print(f"Instructions: {instructions}")
+        print("--------------------------------------------------------------------------------")
 
         # openAI max size of request is 256000, so we need to truncate the first part of the message
         # in order to allow for the request to be below 256K characters.
@@ -150,12 +117,14 @@ You will answer with minimal text and not use formatting or markdown.
             print(f"Agent Response: {agent_response}")
             return agent_response
         else:
+            # TODO: what do we do if the run fails? Possibly handle failure in the calling function
             print(f"OpenAI run.status: {run.status}")
 
     def fetch_goals(self, doc: str) -> list[dict]:
         message = ("Provide a list of goals that a user can accomplish via a terminal based on "
-                   "the documentation. Headings and titles can be used as an indicator of a task. \n")
-        assistant_output = self.do_run(message, OpenAIAgent.INSTRUCTIONS_GET_GOALS + doc)
+                   "the documentation.")
+        instructions = get_instructions("identify_goals", document=doc)
+        assistant_output = self.do_run(message, instructions)
         # TODO: create class for Goal that will parse the string using json.loads
         assistant_output = json.loads(assistant_output)
         return assistant_output["goals"]
@@ -206,9 +175,3 @@ You will answer with minimal text and not use formatting or markdown.
 
     def close(self):
         self.client.beta.assistants.delete(self.assistant.id)
-
-
-def get_instructions(name, **kwargs):
-    filepath = Path(__file__).parent / "instructions" / f"{name}.txt"
-    with open(filepath) as file:
-        return file.read().format(**kwargs)

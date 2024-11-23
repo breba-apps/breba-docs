@@ -47,8 +47,8 @@ def test_analyzer_output_fail(mocker, openai_agent, command_output_fail):
 @pytest.mark.integration
 def test_fetch_goals(mocker, openai_agent, doc):
     goals = openai_agent.fetch_goals(doc)
-    assert any(goal['name'] == 'getting started' for goal in goals), \
-        "No goal with the name 'getting started' was found in the fetched goals."
+    getting_started_goal = next((goal for goal in goals if goal["name"] == "getting started"), None)
+    assert getting_started_goal, "No goal with the name 'getting started' was found in the fetched goals."
 
 
 @pytest.mark.integration

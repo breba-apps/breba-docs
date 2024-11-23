@@ -43,7 +43,27 @@ def test_document_basic(mocker, container):
     analyzer = DocumentAnalyzer()
     report = analyzer.analyze(document)
     assert report.file == "Some Document"
-    assert len(report.goal_reports) == 2
-    # since this is a typo doc, the last command will fail because of a typo
-    assert report.goal_reports[0].command_reports[2].command == "nodestream run simple -v"
-    assert report.goal_reports[0].command_reports[2].success is False
+
+    getting_started_goal = next(
+        (goal_report for goal_report in report.goal_reports if goal_report.goal_name == "getting started"), None)
+    assert getting_started_goal, f"Could not find the getting started goal in the report. Report: {report}"
+
+    goal_with_typo = None
+    for goal_report in report.goal_reports:
+        for command_report in goal_report.command_reports:
+            # check that the typo is preserved
+            if command_report.command == "nodestream run simple -v":
+                goal_with_typo = goal_report
+                # since this is a typo doc, the last command will fail because of a typo
+                assert command_report.success is False
+                break
+
+    # First check the typo is found in a command
+    assert goal_with_typo, f"Should have found a goal with typo in command: {report}"
+
+    # Then check that the expected number of commands is found. (this includes setup and execute commands)
+    assert len(goal_with_typo.command_reports) == 3
+
+    # Makes sure that the typo command is the last one
+    assert goal_with_typo.command_reports[2].command == "nodestream run simple -v", (
+        f"'nodestream run simple -v' is not found in the expected order. Report: {report}")

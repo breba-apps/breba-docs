@@ -14,31 +14,6 @@ class OpenAIAgent(Agent):
 You are assisting a software program to validate contents of a document.
 """
 
-    INSTRUCTIONS_FETCH_MODIFY_FILE_COMMANDS = """
-You are an expert in Quality Control for documentation. You are 
-assisting a software program to correct issues in the documentation.
-
-IMPORTANT: NEVER RETURN MARKDOWN. YOU WILL RETURN TEXT WITHOUT SPECIAL FORMATTING. 
-Important: Return only the commands to run because your response will be used by a software program to run these
-   commands in the terminal.
-
-You will respond with a json list that contains a field called "commands". 
-
-When generating commands to modify the file, change the entire line in the file. Do not simply replace one word.
-
-
-Here is the document:
-{}
-"""
-
-    INPUT_FIRST_COMMAND_SYSTEM_INSTRUCTION = """
-You are assisting a software program to run commands. We are trying to determine if 
-the command is stuck waiting for user input. The goal is to answer all the prompts so that the command can finish 
-executing.
-
-You will answer with minimal text and not use formatting or markdown.
-"""
-
     INPUT_FIRST_MESSAGE = """
     Does the last sentence in the command output contain a prompt asking the user for input in order to complete the command execution? 
     Answer with "Yes" if the last thing in the command output is a prompt asking the user for some input.
@@ -50,13 +25,6 @@ You will answer with minimal text and not use formatting or markdown.
     INPUT_FIRST_MESSAGE_VERIFY = """
     Is the user prompt the last sentence of the command output? Answer only with "Yes" or "No"
     """
-
-    INPUT_FOLLOW_UP_COMMAND_INSTRUCTION = """You need to come up with the right answer to this prompt. To the best of your 
-abilities what should be put into the terminal to continue executing this command? 
-Reply with exact response that will go into the terminal.
-
-You will answer with minimal text and not use formatting or markdown.
-"""
 
     INPUT_FOLLOW_UP_MESSAGE = """What should the response in the terminal be? Provide the exact answer to put into the
     terminal in order to answer the prompt."""
@@ -147,14 +115,16 @@ You will answer with minimal text and not use formatting or markdown.
 
     def provide_input(self, text: str) -> str:
         message = OpenAIAgent.INPUT_FIRST_MESSAGE + "\n" + text
-        has_prompt = self.do_run(message, OpenAIAgent.INPUT_FIRST_COMMAND_SYSTEM_INSTRUCTION)
+        first_instruction = get_instructions("provide_input_1")
+        has_prompt = self.do_run(message, first_instruction)
         if has_prompt == "Yes":
             prompt_verified = self.do_run(OpenAIAgent.INPUT_FIRST_MESSAGE_VERIFY,
-                                          OpenAIAgent.INPUT_FIRST_COMMAND_SYSTEM_INSTRUCTION,
+                                          first_instruction,
                                           False)
             if prompt_verified == "Yes":
+                second_instruction = get_instructions("provide_input_2")
                 prompt_answer = self.do_run(OpenAIAgent.INPUT_FOLLOW_UP_MESSAGE,
-                                            OpenAIAgent.INPUT_FOLLOW_UP_COMMAND_INSTRUCTION,
+                                            second_instruction,
                                             False)
                 return prompt_answer
         return "breba-noop"
@@ -167,7 +137,7 @@ You will answer with minimal text and not use formatting or markdown.
         print("WORKING DIR: ", os.getcwd())
         with open(filepath, "r") as f:
             document = f.read()
-            instructions = OpenAIAgent.INSTRUCTIONS_FETCH_MODIFY_FILE_COMMANDS.format(document)
+            instructions = get_instructions("fetch_modify_file_commands", document=document)
             raw_response = self.do_run(message, instructions)
             commands = json.loads(raw_response)["commands"]  # should be a list. TODO: validate?
 

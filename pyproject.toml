@@ -28,6 +28,9 @@ requests = "^2.32.3"
 pexpect = "^4.9.0"
 gitpython = "^3.1.43"
 jinja2 = "^3.1.4"
+langchain-openai = "^0.2.9"
+langgraph = "^0.2.53"
+langchain-core = "^0.3.21"
 
 
 [tool.poetry.group.test.dependencies]
@@ -45,6 +48,9 @@ markers = [
 ]
 # log_cli = "True"
 # log_cli_level = "INFO"
+
+
+
 
 
 

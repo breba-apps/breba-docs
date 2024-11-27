@@ -11,32 +11,49 @@ from breba_docs.agent.instruction_reader import get_instructions
 
 
 class AgentState(TypedDict):
-    messages: Annotated[list[AnyMessage], operator.add]
+    messages: list[AnyMessage]
+    goals: list[dict]
 
 
 class GraphAgent:
 
-    def __init__(self):
+    def __init__(self, doc: str):
         self.model = ChatOpenAI(model="gpt-4o-mini")
+        self.doc = doc
 
         self.system_instructions = None
         graph = StateGraph(AgentState)
-        graph.add_node("llm", self.invoke_model)
+        graph.add_node("identify_goals", self.identify_goals)
+        graph.add_node("identify_commands", self.identify_commands)
 
-        graph.set_entry_point("llm")
-        graph.add_edge("llm", END)
+        graph.set_entry_point("identify_goals")
+        graph.add_edge("identify_goals", "identify_commands")
+        graph.add_edge("identify_commands", END)
 
         self.graph = graph.compile()
 
-    def fetch_goals(self, doc: str) -> list[dict]:
-        self.system_instructions = get_instructions("identify_goals", document=doc)
-        messages = [HumanMessage(content="What are my goals for this document?")]
-        goals = self.graph.invoke({"messages": messages})
-        return json.loads(goals['messages'][-1].content)["goals"]
 
-    def invoke_model(self, state: AgentState):
+    def identify_commands(self, state: AgentState):
+        system_instructions = get_instructions("fetch_commands", document=self.doc)
+        messages = [SystemMessage(content=system_instructions)]
+
+        for goal in state['goals']:
+            message = HumanMessage(content=f"Give me commands for this goal: {json.dumps(goal)}")
+            messages = messages + [message]
+            message = self.model.invoke(messages)
+            messages.append(message)
+            commands =[cmd.strip() for cmd in message.content.split(",")]
+            goal["commands"] = commands
+
+        return {'messages': messages, 'goals': state['goals']}
+
+
+    def identify_goals(self, state: AgentState):
+        system_instructions = get_instructions("identify_goals", document=self.doc)
         messages = state['messages']
-        if self.system_instructions:
-            messages = [SystemMessage(content=self.system_instructions)] + messages
+        messages = [SystemMessage(content=system_instructions)] + messages
+        messages +=[HumanMessage(content="What are my goals for this document?")]
         message = self.model.invoke(messages)
-        return {'messages': [message]}
+        messages.append(message)
+        new_state = {'messages': messages, 'goals': json.loads(message.content)["goals"]}
+        return new_state

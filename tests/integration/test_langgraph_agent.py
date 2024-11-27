@@ -5,9 +5,9 @@ from breba_docs.agent.graph_agent import GraphAgent
 
 
 @pytest.fixture
-def agent():
+def agent(doc):
     load_dotenv()
-    return GraphAgent()
+    return GraphAgent(doc)
 
 
 @pytest.fixture
@@ -17,8 +17,10 @@ def doc():
 
 
 @pytest.mark.integration
-def test_fetch_goals(mocker, agent, doc):
-    goals = agent.fetch_goals(doc)
+def test_invoke_graph(mocker, agent, doc):
+    graph = GraphAgent(doc)
+    state = graph.graph.invoke({"messages": []})
+    goals = state['goals']
     getting_started_goal = next((goal for goal in goals if goal["name"] == "getting started"), None)
     assert getting_started_goal, "No goal with the name 'getting started' was found in the fetched goals."
 

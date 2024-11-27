@@ -2,12 +2,12 @@ import json
 import operator
 from typing import Annotated, TypedDict
 
-from breba_docs.agent.instruction_reader import get_instructions
-from langgraph.graph import StateGraph, END
 from langchain_core.messages import AnyMessage, SystemMessage
-
-from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage
+from langchain_openai import ChatOpenAI
+from langgraph.graph import StateGraph, END
+
+from breba_docs.agent.instruction_reader import get_instructions
 
 
 class AgentState(TypedDict):

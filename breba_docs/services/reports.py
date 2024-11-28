@@ -5,8 +5,8 @@ from dataclasses import dataclass
 @dataclass
 class CommandReport:
     command: str
-    success: bool
-    insights: str
+    success: bool | None
+    insights: str | None
 
     @classmethod
     def from_string(cls, message: str) -> "CommandReport":

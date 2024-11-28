@@ -19,9 +19,9 @@ def doc():
 @pytest.mark.integration
 def test_invoke_graph(mocker, agent, doc):
     graph = GraphAgent(doc)
-    state = graph.graph.invoke({"messages": []})
-    goals = state['goals']
-    getting_started_goal = next((goal for goal in goals if goal["name"] == "getting started"), None)
+    state = graph.invoke()
+    goals = state['goal_reports']
+    getting_started_goal = next((goal for goal in goals if goal.goal_name == "getting started"), None)
     assert getting_started_goal, "No goal with the name 'getting started' was found in the fetched goals."
 
 

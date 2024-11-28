@@ -7,7 +7,10 @@ from langchain_core.messages import HumanMessage
 from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph, END
 
+from breba_docs.agent.agent import Agent
 from breba_docs.agent.instruction_reader import get_instructions
+from breba_docs.agent.openai_agent import OpenAIAgent
+from breba_docs.services.command_executor import ContainerCommandExecutor
 from breba_docs.services.reports import GoalReport, CommandReport
 
 
@@ -20,6 +23,7 @@ class AgentState(TypedDict):
 class GraphAgent:
 
     def __init__(self, doc: str):
+        self.agent: Agent = OpenAIAgent()
         self.model = ChatOpenAI(model="gpt-4o-mini", temperature=0)
         self.doc = doc
 
@@ -27,12 +31,14 @@ class GraphAgent:
         graph = StateGraph(AgentState)
         graph.add_node("identify_goals", self.identify_goals)
         graph.add_node("identify_commands", self.identify_commands)
+        graph.add_node("execute_commands", self.execute_commands)
 
         graph.set_entry_point("identify_goals")
         graph.add_edge("identify_goals", "identify_commands")
+        graph.add_edge("identify_commands", "execute_commands")
 
         graph.add_conditional_edges(
-            "identify_commands",
+            "execute_commands",
             self.process_more_goals,
             {True: "identify_commands", False: END}
         )
@@ -45,9 +51,26 @@ class GraphAgent:
     def process_more_goals(self, state: AgentState):
         return len(state['goals']) > 0
 
+    def execute_commands(self, state: AgentState):
+        # Grab the commands from the last goal report
+        current_goal = state["goal_reports"][-1]
+        commands = [command_report.command for command_report in current_goal.command_reports]
+        # TODO: ContainerCommandExecutor needs to take an interface that provides input to prompts
+        # TODO: Should not return command reports. That should be done by the graph
+        command_reports = ContainerCommandExecutor(self.agent).execute_commands_sync(commands)
+        updated_goal = GoalReport(current_goal.goal_name, current_goal.goal_description, command_reports)
+
+        return {
+            **state,
+            'goal_reports': state['goal_reports'][:-1] + [updated_goal]
+        }
+
+
     def identify_commands(self, state: AgentState):
         current_goal = state['goals'][0]  # Assume safe access
         system_instructions = get_instructions("fetch_commands", document=self.doc)
+
+        # Remove old messages from the state because each goal will have an own clean slate
         messages = [SystemMessage(content=system_instructions)]
 
         message = HumanMessage(content=f"Give me commands for this goal: {json.dumps(current_goal)}")

@@ -1,8 +1,11 @@
+from pathlib import Path
+
 import pytest
 from dotenv import load_dotenv
 
 from breba_docs.agent.graph_agent import GraphAgent
 from breba_docs.container import container_setup
+from breba_docs.services.document import Document
 
 
 @pytest.fixture
@@ -13,7 +16,7 @@ def agent(doc):
 
 @pytest.fixture
 def doc():
-    with open('./tests/integration/fixtures/doc.md', 'r') as file:
+    with open('./tests/integration/fixtures/typo_doc.md', 'r') as file:
         return file.read()
 
 @pytest.fixture(autouse=True)
@@ -34,7 +37,7 @@ def container():
 
 @pytest.mark.integration
 def test_invoke_graph(mocker, agent, doc):
-    graph = GraphAgent(doc)
+    graph = GraphAgent(Document(doc, Path("tests/integration/fixtures/doc.md"))) # agent(doc)
     state = graph.invoke()
     goals = state['goal_reports']
     getting_started_goal = next((goal for goal in goals if goal.goal_name == "getting started"), None)

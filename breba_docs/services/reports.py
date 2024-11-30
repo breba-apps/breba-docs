@@ -1,5 +1,5 @@
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
@@ -27,6 +27,7 @@ class GoalReport:
     goal_name: str
     goal_description: str
     command_reports: list[CommandReport]
+    modify_command_reports: list[CommandReport] = field(default_factory=list)
 
 
 @dataclass

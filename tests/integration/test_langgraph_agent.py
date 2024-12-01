@@ -41,7 +41,8 @@ def test_invoke_graph(mocker, agent, doc):
     state = graph.invoke()
     goals = state['goal_reports']
     getting_started_goal = next((goal for goal in goals if goal.goal_name == "getting started"), None)
-    # TODO: test commands list as well as command execution success
     assert getting_started_goal, "No goal with the name 'getting started' was found in the fetched goals."
-
-
+    assert getting_started_goal.command_reports[0].success
+    assert getting_started_goal.command_reports[1].success
+    assert not getting_started_goal.command_reports[2].success
+    assert getting_started_goal.modify_command_reports[0].command =="sed -i 's/nodestream run simple -v/nodestream run sample -v/' tests/integration/fixtures/doc.md"

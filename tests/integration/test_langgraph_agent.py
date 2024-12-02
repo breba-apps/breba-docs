@@ -16,8 +16,10 @@ def agent(doc):
 
 @pytest.fixture
 def doc():
-    with open('./tests/integration/fixtures/typo_doc.md', 'r') as file:
-        return file.read()
+    filepath = Path("tests/integration/fixtures/typo_doc.md")
+    with open(filepath, 'r') as file:
+        content =  file.read()
+        return Document(content, filepath)
 
 @pytest.fixture(autouse=True)
 def container():
@@ -37,7 +39,7 @@ def container():
 
 @pytest.mark.integration
 def test_invoke_graph(mocker, agent, doc):
-    graph = GraphAgent(Document(doc, Path("tests/integration/fixtures/doc.md"))) # agent(doc)
+    graph = GraphAgent(doc) # agent(doc)
     state = graph.invoke()
     goals = state['goal_reports']
     getting_started_goal = next((goal for goal in goals if goal.goal_name == "getting started"), None)
@@ -45,4 +47,4 @@ def test_invoke_graph(mocker, agent, doc):
     assert getting_started_goal.command_reports[0].success
     assert getting_started_goal.command_reports[1].success
     assert not getting_started_goal.command_reports[2].success
-    assert getting_started_goal.modify_command_reports[0].command =="sed -i 's/nodestream run simple -v/nodestream run sample -v/' tests/integration/fixtures/doc.md"
+    assert getting_started_goal.modify_command_reports[0].command =="sed -i 's/nodestream run simple -v/nodestream run sample -v/' tests/integration/fixtures/typo_doc.md"

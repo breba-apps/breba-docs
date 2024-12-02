@@ -1,4 +1,3 @@
-import dataclasses
 import json
 from typing import TypedDict
 
@@ -57,33 +56,29 @@ class GraphAgent:
         return len(state['goals']) > 0
 
     def execute_mutator_commands(self, state: AgentState):
-        current_goal = dataclasses.replace(state['goal_reports'][-1])
+        current_goal = state['goal_reports'].pop()
         command_executor = LocalCommandExecutor(self.agent)
         for command_report in current_goal.command_reports:
             if not command_report.success:
                 modify_commands = self.agent.fetch_modify_file_commands(self.doc.filepath, command_report)
                 modify_report = command_executor.execute_commands_sync(modify_commands)
                 current_goal.modify_command_reports += modify_report
-        updated_goal_reports = [dataclasses.replace(report) for report in state['goal_reports'][:-1]]
-        return {'goal_reports': updated_goal_reports + [current_goal]}
+        return {'goal_reports': state['goal_reports'] + [current_goal]}
 
     def execute_commands(self, state: AgentState):
         # Grab the commands from the last goal report
-        current_goal = state["goal_reports"][-1]
+        current_goal = state["goal_reports"].pop()
         commands = [command_report.command for command_report in current_goal.command_reports]
         # TODO: ContainerCommandExecutor needs to take an interface that provides input to prompts
         # TODO: Should not return command reports. That should be done by the graph
         command_reports = ContainerCommandExecutor(self.agent).execute_commands_sync(commands)
-        updated_goal = GoalReport(current_goal.goal_name, current_goal.goal_description, command_reports)
+        current_goal.command_reports = command_reports
 
-        return {
-            **state,
-            'goal_reports': state['goal_reports'][:-1] + [updated_goal]
-        }
+        return { 'goal_reports': state['goal_reports'] + [current_goal] }
 
 
     def identify_commands(self, state: AgentState):
-        current_goal = state['goals'][0]  # Assume safe access
+        current_goal = state['goals'].pop(0)
         system_instructions = get_instructions("fetch_commands", document=self.doc.content)
 
         # Remove old messages from the state because each goal will have an own clean slate
@@ -98,18 +93,13 @@ class GraphAgent:
         command_reports = [CommandReport(command, None, None) for command in commands]
         goal_report = GoalReport(current_goal["name"], current_goal["description"], command_reports)
 
-        # Create a new state object
-        new_state = {
-            **state,
-            'goals': state['goals'][1:],  # Remove processed goal
+        return {
+            'goals': state['goals'],  # Remove processed goal
             'messages': messages,
             'goal_reports': state['goal_reports'] + [goal_report]
         }
 
-        return new_state
-
-    def identify_goals(self, state: AgentState) -> AgentState:
-        # Get system instructions
+    def identify_goals(self, state: AgentState):
         system_instructions = get_instructions("identify_goals", document=self.doc.content)
 
         # Build new messages list
@@ -123,12 +113,5 @@ class GraphAgent:
         # Parse goals from the response
         new_goals = json.loads(response_message.content)["goals"]
 
-        # Create a new state dictionary with updated values
-        new_state: AgentState = {
-            **state,
-            'messages': new_messages,
-            'goals': new_goals,
-        }
-
-        return new_state
+        return { 'messages': new_messages, 'goals': new_goals }
 

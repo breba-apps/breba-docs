@@ -8,7 +8,8 @@ from urllib.parse import urlparse
 
 from git import Repo
 
-from breba_docs.analyzer.document_analyzer import DocumentAnalyzer
+from breba_docs.analyzer.document_analyzer import create_document_report
+from breba_docs.analyzer.reporter import Reporter
 from breba_docs.container import container_setup
 from breba_docs.services.document import Document
 
@@ -87,8 +88,8 @@ def run_analyzer(document: Document, debug_server):
             # TODO: Start container only when special argument is provided
             started_container = container_setup(debug=debug_server)
 
-            analyzer = DocumentAnalyzer()
-            analyzer.analyze(document)
+            report = create_document_report(document)
+            Reporter(report).print_report()
         else:
             print("No document provided. Exiting...")
     finally:

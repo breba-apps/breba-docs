@@ -20,6 +20,8 @@ class AgentState(TypedDict):
     goal_reports: list[GoalReport]
 
 
+# TODO: test this class by testing individual functions on input state and output state
+# TODO: maybe unit test entire graph somehow
 class GraphAgent:
 
     def __init__(self, doc: Document):

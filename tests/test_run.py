@@ -5,6 +5,7 @@ import pytest
 from unittest.mock import mock_open, MagicMock
 
 from breba_docs.cli import start_cli
+from breba_docs.services.reports import DocumentReport
 
 
 @pytest.fixture(autouse=True)
@@ -26,19 +27,12 @@ def mock_repo(mocker):
     mock_git_repo.clone_from = mocker.MagicMock(return_value=mock_repo)
 
 
-@pytest.fixture
-def mock_document_analyzer(mocker):
-    # Create a mock instance of DocumentAnalyzer
-    mock_analyze_instance = MagicMock()
-
-    # Patch the DocumentAnalyzer class so that it always returns the mock instance
-    mocker.patch('breba_docs.cli.DocumentAnalyzer', return_value=mock_analyze_instance)
-
-    # Return the mock instance so it can be used in tests
-    return mock_analyze_instance
+@pytest.fixture()
+def create_document_report(mocker):
+    return mocker.patch('breba_docs.cli.create_document_report', return_value=DocumentReport("Some Document", []))
 
 
-def test_run_with_valid_url(mock_repo, mock_document_analyzer, mocker):
+def test_run_with_valid_url(mock_repo, create_document_report, mocker):
     # Test case where the user provides a valid URL
 
     mocker.patch('builtins.input', return_value="https://valid.url/to/document.md")
@@ -48,11 +42,10 @@ def test_run_with_valid_url(mock_repo, mock_document_analyzer, mocker):
 
     open_mock.assert_called_with(Path('/path/to/mock/repo/README.md'), "r")
 
-    # Assert that the analyze function was called with the correct arguments
-    mock_document_analyzer.analyze.assert_called_once()
+    create_document_report.assert_called_once()
 
 
-def test_run_with_valid_file_path(mocker, mock_document_analyzer):
+def test_run_with_valid_file_path(mocker, create_document_report):
     # Test case where the user provides a valid local file path
     current_dir = Path(__file__).parent
     real_file_path = str(current_dir / "sample.md")  # use a valid file path
@@ -67,12 +60,11 @@ def test_run_with_valid_file_path(mocker, mock_document_analyzer):
     # Assert that the file was opened and read
     open_mock.assert_any_call(real_file_path, "r")
 
-    mock_document_analyzer.analyze.assert_called_once()
+    create_document_report.assert_called_once()
 
 
-def test_run_with_invalid_input(mocker, mock_document_analyzer):
+def test_run_with_invalid_input(mocker, create_document_report):
     # Test case where the user provides invalid input
-
     mocker.patch('builtins.input', return_value="invalid_input")
     print_mock = mocker.patch('builtins.print')
 
@@ -82,4 +74,4 @@ def test_run_with_invalid_input(mocker, mock_document_analyzer):
     print_mock.assert_any_call("Not a valid URL or local file path. 1 retries remaining.")
     print_mock.assert_any_call("No document provided. Exiting...")
 
-    mock_document_analyzer.analyze.assert_not_called()
+    create_document_report.assert_not_called()

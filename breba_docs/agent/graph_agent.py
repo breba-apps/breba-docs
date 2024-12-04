@@ -1,5 +1,5 @@
 import json
-from typing import TypedDict
+from typing import TypedDict, Literal
 
 from langchain_core.messages import AnyMessage, SystemMessage
 from langchain_core.messages import HumanMessage
@@ -42,14 +42,29 @@ class GraphAgent:
         graph.add_edge("identify_goals", "identify_commands")
         graph.add_edge("identify_commands", "execute_commands")
 
+        graph.add_conditional_edges("execute_commands", self.maybe_start_next_goal)
+
         graph.add_conditional_edges(
             "execute_mutator_commands",
             self.process_more_goals,
             {True: "identify_commands", False: END}
         )
-        graph.add_edge("execute_commands", "execute_mutator_commands")
 
         self.graph = graph.compile()
+
+    def maybe_start_next_goal(self, state: AgentState) -> Literal["identify_commands", "execute_mutator_commands"] | END:
+        """If all commands succeed and no further goals, then END.
+        If all commands succeeded, and there are more goals, then move on to the next goal.
+        if some commands failed, then try to fix the document
+        """
+        current_goal = state['goal_reports'][-1]
+        if all(command_report.success for command_report in current_goal.command_reports):
+            if self.process_more_goals(state):
+                return "identify_commands"
+            else:
+                return END
+
+        return "execute_mutator_commands"
 
     def invoke(self):
         return self.graph.invoke({"messages": [], "goals": [], "goal_reports": []})
@@ -57,6 +72,10 @@ class GraphAgent:
     def process_more_goals(self, state: AgentState):
         return len(state['goals']) > 0
 
+    # Use cases:
+    #   If no mutator commands could not succeed after retries, then we update report with Error and move to next goal
+    #   If mutator commands made no changes or failed, then we want to refine the commands to fix them (retry count)
+    #   If mutator commands made changes, then re-evaluate goal
     def execute_mutator_commands(self, state: AgentState):
         current_goal = state['goal_reports'].pop()
         command_executor = LocalCommandExecutor(self.agent)

@@ -1,5 +1,6 @@
 import json
 import os
+import platform
 from pathlib import Path
 
 from openai import OpenAI
@@ -139,7 +140,7 @@ You are assisting a software program to validate contents of a document.
         print("WORKING DIR: ", os.getcwd())
         with open(filepath, "r") as f:
             document = f.read()
-            instructions = get_instructions("fetch_modify_file_commands", document=document)
+            instructions = get_instructions("fetch_modify_file_commands", document=document, platform=platform.system())
             raw_response = self.do_run(message, instructions)
             commands = json.loads(raw_response)["commands"]  # should be a list. TODO: validate?
 

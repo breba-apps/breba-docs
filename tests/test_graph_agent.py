@@ -5,7 +5,7 @@ import pytest
 from langgraph.constants import END
 
 from breba_docs.agent.graph_agent import GraphAgent, AgentState
-from breba_docs.services.reports import CommandReport, GoalReport
+from breba_docs.services.reports import CommandReport, GoalReport, Goal
 
 
 @pytest.fixture(autouse=True)
@@ -26,10 +26,9 @@ def test_identify_goals():
     mock_response.content = json.dumps({"goals": [{"name": "Goal 1", "description": "Desc 1"}]})
     graph_agent.model.invoke.return_value = mock_response
 
-    result = graph_agent.identify_goals(AgentState(messages=[], goals=[], goal_reports=[]))
+    result = graph_agent.identify_goals(AgentState(messages=[], goals=[], goal_reports=[], current_goal=None))
 
-    # Assertions
-    assert result["goals"] == [{"name": "Goal 1", "description": "Desc 1"}]
+    assert result["goals"] == [Goal(name="Goal 1", description="Desc 1")]
     graph_agent.model.invoke.assert_called_once()
 
 
@@ -40,15 +39,15 @@ def test_maybe_start_next_goal_commands_succeeded():
         CommandReport(command="ls -la", success=True, insights=None),
     ]
     goal_report = GoalReport(
-        goal_name="Sample Goal",
-        goal_description="Test goal for identify_commands",
+        Goal(name="Sample Goal", description="Test goal for identify_commands"),
         command_reports=command_reports,
     )
 
     state = AgentState(
         messages=[],
-        goals=[{"name": "Sample Goal", "description": "Test goal for identify_commands"}],
+        goals=[Goal(name="Sample Goal", description="Test goal for identify_commands")],
         goal_reports=[goal_report],
+        current_goal=None
     )
 
     mock_doc = Mock(content="Sample document content")
@@ -65,15 +64,15 @@ def test_maybe_start_next_goal_commands_failed():
         CommandReport(command="ls -la", success=False, insights=None),
     ]
     goal_report = GoalReport(
-        goal_name="Sample Goal",
-        goal_description="Test goal for identify_commands",
+        Goal(name="Sample Goal", description="Test goal for identify_commands"),
         command_reports=command_reports,
     )
 
     state = AgentState(
         messages=[],
-        goals=[{"name": "Sample Goal", "description": "Test goal for identify_commands"}],
+        goals=[Goal(name="Sample Goal", description="Test goal for identify_commands")],
         goal_reports=[goal_report],
+        current_goal=None
     )
 
     mock_doc = Mock(content="Sample document content")
@@ -91,8 +90,7 @@ def test_maybe_start_next_goal_no_more_goals():
         CommandReport(command="ls -la", success=True, insights=None),
     ]
     goal_report = GoalReport(
-        goal_name="Sample Goal",
-        goal_description="Test goal for identify_commands",
+        Goal(name="Sample Goal", description="Test goal for identify_commands"),
         command_reports=command_reports,
     )
 
@@ -100,6 +98,7 @@ def test_maybe_start_next_goal_no_more_goals():
         messages=[],
         goals=[],
         goal_reports=[goal_report],
+        current_goal=None
     )
 
     mock_doc = Mock(content="Sample document content")

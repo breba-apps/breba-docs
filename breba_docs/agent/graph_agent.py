@@ -1,4 +1,5 @@
 import json
+from dataclasses import asdict
 from typing import TypedDict, Literal
 
 from langchain_core.messages import AnyMessage, SystemMessage
@@ -11,13 +12,14 @@ from breba_docs.agent.instruction_reader import get_instructions
 from breba_docs.agent.openai_agent import OpenAIAgent
 from breba_docs.services.command_executor import ContainerCommandExecutor, LocalCommandExecutor
 from breba_docs.services.document import Document
-from breba_docs.services.reports import GoalReport, CommandReport
+from breba_docs.services.reports import GoalReport, CommandReport, Goal
 
 
 class AgentState(TypedDict):
     messages: list[AnyMessage]
-    goals: list[dict]
+    goals: list[Goal]
     goal_reports: list[GoalReport]
+    current_goal: Goal | None
 
 
 # TODO: test this class by testing individual functions on input state and output state
@@ -34,12 +36,14 @@ class GraphAgent:
         # TODO: can use ReAct agents for some of the looping
         # TODO: can update state without **state
         graph.add_node("identify_goals", self.identify_goals)
+        graph.add_node("start_next_goal", self.start_next_goal)
         graph.add_node("identify_commands", self.identify_commands)
         graph.add_node("execute_commands", self.execute_commands)
         graph.add_node("execute_mutator_commands", self.execute_mutator_commands)
 
         graph.set_entry_point("identify_goals")
-        graph.add_edge("identify_goals", "identify_commands")
+        graph.add_edge("identify_goals", "start_next_goal")
+        graph.add_edge("start_next_goal", "identify_commands")
         graph.add_edge("identify_commands", "execute_commands")
 
         graph.add_conditional_edges("execute_commands", self.maybe_start_next_goal)
@@ -47,7 +51,7 @@ class GraphAgent:
         graph.add_conditional_edges(
             "execute_mutator_commands",
             self.process_more_goals,
-            {True: "identify_commands", False: END}
+            {True: "start_next_goal", False: END}
         )
 
         self.graph = graph.compile()
@@ -73,9 +77,9 @@ class GraphAgent:
         return len(state['goals']) > 0
 
     # Use cases:
+    #   If mutator commands made changes, then re-evaluate goal
     #   If no mutator commands could not succeed after retries, then we update report with Error and move to next goal
     #   If mutator commands made no changes or failed, then we want to refine the commands to fix them (retry count)
-    #   If mutator commands made changes, then re-evaluate goal
     def execute_mutator_commands(self, state: AgentState):
         current_goal = state['goal_reports'].pop()
         command_executor = LocalCommandExecutor(self.agent)
@@ -97,22 +101,25 @@ class GraphAgent:
 
         return { 'goal_reports': state['goal_reports'] + [current_goal] }
 
+    def start_next_goal(self, state: AgentState):
+        current_goal = state['goals'].pop(0)
+        return {'current_goal': current_goal, 'goals': state['goals']}
 
     def identify_commands(self, state: AgentState):
-        current_goal = state['goals'].pop(0)
+        current_goal: Goal = state['current_goal']
         system_instructions = get_instructions("fetch_commands", document=self.doc.content)
 
         # Remove old messages from the state because each goal will have an own clean slate
         messages = [SystemMessage(content=system_instructions)]
 
-        message = HumanMessage(content=f"Give me commands for this goal: {json.dumps(current_goal)}")
+        message = HumanMessage(content=f"Give me commands for this goal: {json.dumps(asdict(current_goal))}")
         messages += [message]
         model_response = self.model.invoke(messages)
         messages.append(model_response)
         commands = [cmd.strip() for cmd in model_response.content.split(",")]
 
         command_reports = [CommandReport(command, None, None) for command in commands]
-        goal_report = GoalReport(current_goal["name"], current_goal["description"], command_reports)
+        goal_report = GoalReport(current_goal, command_reports)
 
         return {
             'goals': state['goals'],  # Remove processed goal
@@ -132,7 +139,7 @@ class GraphAgent:
         new_messages.append(response_message)
 
         # Parse goals from the response
-        new_goals = json.loads(response_message.content)["goals"]
+        new_goals = [Goal(**goal) for goal in json.loads(response_message.content)["goals"]]
 
         return { 'messages': new_messages, 'goals': new_goals }
 

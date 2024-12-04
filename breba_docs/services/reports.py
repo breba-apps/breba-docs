@@ -3,6 +3,11 @@ from dataclasses import dataclass, field
 
 
 @dataclass
+class Goal:
+    name: str
+    description: str
+
+@dataclass
 class CommandReport:
     command: str
     success: bool | None
@@ -24,8 +29,7 @@ class CommandReport:
 
 @dataclass
 class GoalReport:
-    goal_name: str
-    goal_description: str
+    goal: Goal
     command_reports: list[CommandReport]
     modify_command_reports: list[CommandReport] = field(default_factory=list)
 

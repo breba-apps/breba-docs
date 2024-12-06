@@ -38,7 +38,7 @@ def start_logs_thread(container):
     return logs_thread
 
 
-def container_setup(debug=False, dev=False):
+def container_setup(debug=False, dev=False) -> Container:
     client = docker.from_env()
     breba_image = os.environ.get("BREBA_IMAGE", "breba-image")
     print(f"Setting up the container with image: {breba_image}")

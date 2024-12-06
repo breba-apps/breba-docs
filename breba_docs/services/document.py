@@ -16,3 +16,7 @@ class Document:
         # Write the content to the file
         with open(self.filepath, "w") as f:
             f.write(self.content)
+
+    def reload(self):
+        self.content = self.filepath.read_text()
+        return self

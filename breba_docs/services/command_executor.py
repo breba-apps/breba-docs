@@ -8,6 +8,7 @@ import uuid
 import pexpect
 
 from breba_docs.agent.agent import Agent
+from breba_docs.container import container_setup
 from breba_docs.services.reports import CommandReport
 from breba_docs.socket_server.client import Client
 
@@ -125,12 +126,22 @@ class ContainerCommandExecutor(CommandExecutor):
 
     def execute_commands_sync(self, commands) -> list[CommandReport]:
         report = []
-        # Need to use a single executor because each executor will run in a separate terminal session
-        with Client() as socket_client:
-            for command in commands:
-                command = {"command": command}
-                response = socket_client.send_message(json.dumps(command))
-                response = self.collect_response(response, socket_client)
-                agent_output = self.agent.analyze_output(response)
-                report.append(agent_output)
-        return report
+        execution_container = None
+        try:
+            execution_container = container_setup()
+            time.sleep(0.5)
+            # Need to use a single executor because each executor will run in a separate terminal session
+
+            with Client() as socket_client:
+                for command in commands:
+                    command = {"command": command}
+                    response = socket_client.send_message(json.dumps(command))
+                    response = self.collect_response(response, socket_client)
+                    agent_output = self.agent.analyze_output(response)
+                    report.append(agent_output)
+            return report
+
+        finally:
+            if execution_container:
+                execution_container.stop()
+                execution_container.remove()

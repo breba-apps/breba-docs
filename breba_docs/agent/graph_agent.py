@@ -20,6 +20,7 @@ class AgentState(TypedDict):
     goals: list[Goal]
     goal_reports: list[GoalReport]
     current_goal: Goal | None
+    goal_evaluation_count: int | None
 
 
 # TODO: test this class by testing individual functions on input state and output state
@@ -43,38 +44,42 @@ class GraphAgent:
 
         graph.set_entry_point("identify_goals")
         graph.add_edge("identify_goals", "start_next_goal")
-        graph.add_edge("start_next_goal", "identify_commands")
+        graph.add_conditional_edges("start_next_goal",
+                                    self.process_more_goals,
+                                    {True: "identify_commands", False: END})
         graph.add_edge("identify_commands", "execute_commands")
 
-        graph.add_conditional_edges("execute_commands", self.maybe_start_next_goal)
+        # TODO: see if this can use a path map without having 3 paths
+        graph.add_conditional_edges("execute_commands",
+                                    self.commands_succeeded,
+                                    {True: "start_next_goal", False: "execute_mutator_commands"})
 
         graph.add_conditional_edges(
             "execute_mutator_commands",
-            self.process_more_goals,
-            {True: "start_next_goal", False: END}
+            self.should_reevaluate_goal,
+            {True: "identify_commands", False: "start_next_goal"}
         )
 
         self.graph = graph.compile()
 
-    def maybe_start_next_goal(self, state: AgentState) -> Literal["identify_commands", "execute_mutator_commands"] | END:
-        """If all commands succeed and no further goals, then END.
-        If all commands succeeded, and there are more goals, then move on to the next goal.
-        if some commands failed, then try to fix the document
-        """
-        current_goal = state['goal_reports'][-1]
-        if all(command_report.success for command_report in current_goal.command_reports):
-            if self.process_more_goals(state):
-                return "identify_commands"
-            else:
-                return END
-
-        return "execute_mutator_commands"
-
     def invoke(self):
         return self.graph.invoke({"messages": [], "goals": [], "goal_reports": []})
 
+    def should_reevaluate_goal(self, state: AgentState):
+        # By convention, we are always working on the last goal report
+        current_goal_report: GoalReport = state['goal_reports'][-1]
+        if state['goal_evaluation_count'] >= 4:
+            return False
+        # TODO: currently the way to tell if doc has changed and needs to be reevaluated for the given goal
+        #  is to see if any of the modify commands succeeded. In future should engineer smarter way
+        return any(modify_command_report.success for modify_command_report in current_goal_report.modify_command_reports)
+
+    def commands_succeeded(self, state: AgentState) -> Literal["identify_commands", "execute_mutator_commands"] | END:
+        current_goal = state['goal_reports'][-1]
+        return all(command_report.success for command_report in current_goal.command_reports)
+
     def process_more_goals(self, state: AgentState):
-        return len(state['goals']) > 0
+        return state['current_goal'] is not None
 
     # Use cases:
     #   If mutator commands made changes, then re-evaluate goal
@@ -102,12 +107,15 @@ class GraphAgent:
         return { 'goal_reports': state['goal_reports'] + [current_goal] }
 
     def start_next_goal(self, state: AgentState):
-        current_goal = state['goals'].pop(0)
-        return {'current_goal': current_goal, 'goals': state['goals']}
+        try:
+            current_goal = state['goals'].pop(0)
+        except IndexError:
+            current_goal = None
+        return {'current_goal': current_goal, 'goals': state['goals'], 'goal_evaluation_count': 0}
 
     def identify_commands(self, state: AgentState):
         current_goal: Goal = state['current_goal']
-        system_instructions = get_instructions("fetch_commands", document=self.doc.content)
+        system_instructions = get_instructions("fetch_commands", document=self.doc.reload().content)
 
         # Remove old messages from the state because each goal will have an own clean slate
         messages = [SystemMessage(content=system_instructions)]
@@ -124,7 +132,8 @@ class GraphAgent:
         return {
             'goals': state['goals'],  # Remove processed goal
             'messages': messages,
-            'goal_reports': state['goal_reports'] + [goal_report]
+            'goal_reports': state['goal_reports'] + [goal_report],
+            'goal_evaluation_count': state['goal_evaluation_count'] + 1
         }
 
     def identify_goals(self, state: AgentState):

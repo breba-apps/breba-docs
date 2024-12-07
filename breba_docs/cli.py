@@ -82,20 +82,12 @@ def setup_project(project_path):
 
 
 def run_analyzer(document: Document, debug_server):
-    started_container = None
-    try:
-        if document:
-            # TODO: Start container only when special argument is provided
-            started_container = container_setup(debug=debug_server)
+    if document:
+        report = create_document_report(document)
+        Reporter(report).print_report()
+    else:
+        print("No document provided. Exiting...")
 
-            report = create_document_report(document)
-            Reporter(report).print_report()
-        else:
-            print("No document provided. Exiting...")
-    finally:
-        if started_container:
-            started_container.stop()
-            started_container.remove()
 
 
 def start_cli(project_path, debug_server=False):

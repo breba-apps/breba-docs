@@ -8,9 +8,6 @@ from breba_docs.cli import start_cli
 from breba_docs.services.reports import DocumentReport
 
 
-@pytest.fixture(autouse=True)
-def mock_container(mocker):
-    mocker.patch('breba_docs.cli.container_setup', return_value=MagicMock())
 
 
 @pytest.fixture(autouse=True)

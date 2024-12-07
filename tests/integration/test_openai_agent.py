@@ -72,7 +72,7 @@ def test_fetch_modify_file_commands(mocker, openai_agent):
                                     "project. A suggestion was provided to check if 'sample' was intended instead.")
     filepath = Path('./tests/integration/fixtures/typo_doc.md')
     commands = openai_agent.fetch_modify_file_commands(filepath, report)
-    expected_command = "sed -i 's/nodestream run simple -v/nodestream run sample -v/' tests/integration/fixtures/typo_doc.md"
+    expected_command = "sed -i '' 's/nodestream run simple -v/nodestream run sample -v/' tests/integration/fixtures/typo_doc.md"
     assert commands[0] == expected_command
 
 

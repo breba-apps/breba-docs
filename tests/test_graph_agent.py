@@ -32,7 +32,7 @@ def test_identify_goals():
     graph_agent.model.invoke.assert_called_once()
 
 
-def test_maybe_start_next_goal_commands_succeeded():
+def test_commands_succeeded():
     # Create CommandReports and a GoalReport
     command_reports = [
         CommandReport(command="echo Hello", success=True, insights=None),
@@ -54,11 +54,9 @@ def test_maybe_start_next_goal_commands_succeeded():
 
     graph_agent = GraphAgent(doc=mock_doc)
 
-    result = graph_agent.maybe_start_next_goal(state)
+    assert graph_agent.commands_succeeded(state)
 
-    assert result == "identify_commands"
-
-def test_maybe_start_next_goal_commands_failed():
+def test_commands_failed():
     command_reports = [
         CommandReport(command="echo Hello", success=True, insights=None),
         CommandReport(command="ls -la", success=False, insights=None),
@@ -79,32 +77,4 @@ def test_maybe_start_next_goal_commands_failed():
 
     graph_agent = GraphAgent(doc=mock_doc)
 
-    result = graph_agent.maybe_start_next_goal(state)
-
-    assert result == "execute_mutator_commands"
-
-
-def test_maybe_start_next_goal_no_more_goals():
-    command_reports = [
-        CommandReport(command="echo Hello", success=True, insights=None),
-        CommandReport(command="ls -la", success=True, insights=None),
-    ]
-    goal_report = GoalReport(
-        Goal(name="Sample Goal", description="Test goal for identify_commands"),
-        command_reports=command_reports,
-    )
-
-    state = AgentState(
-        messages=[],
-        goals=[],
-        goal_reports=[goal_report],
-        current_goal=None
-    )
-
-    mock_doc = Mock(content="Sample document content")
-
-    graph_agent = GraphAgent(doc=mock_doc)
-
-    result = graph_agent.maybe_start_next_goal(state)
-
-    assert result == END
+    assert not graph_agent.commands_succeeded(state)

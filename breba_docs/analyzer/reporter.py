@@ -2,14 +2,15 @@ class Reporter:
     def __init__(self, document_report):
         self.document_report = document_report
 
+    # TODO: write tests
     def print_report(self):
         # Print document report details
         print(f"Document Report: {self.document_report.file}\n")
 
         # Iterate over each goal in the document
         for goal_report in self.document_report.goal_reports:
-            print(f"Goal: {goal_report.goal_name}")
-            print(f"Description: {goal_report.goal_description}\n")
+            print(f"Goal: {goal_report.goal.name}")
+            print(f"Description: {goal_report.goal.description}\n")
 
             # Iterate over command reports within each goal
             for command_report in goal_report.command_reports:

@@ -98,10 +98,17 @@ class GraphAgent:
     def execute_commands(self, state: AgentState):
         # Grab the commands from the last goal report
         current_goal = state["goal_reports"].pop()
-        commands = [command_report.command for command_report in current_goal.command_reports]
+        commands: list[str] = [command_report.command for command_report in current_goal.command_reports]
+
+        command_reports = []
         # TODO: ContainerCommandExecutor needs to take an interface that provides input to prompts
-        # TODO: Should not return command reports. That should be done by the graph
-        command_reports = ContainerCommandExecutor(self.agent).execute_commands_sync(commands)
+        with ContainerCommandExecutor.executor_and_new_container(self.agent) as executor:
+            with executor.session() as session:
+                for command in commands:
+                    response = session.execute_command(command)
+                    command_report = self.agent.analyze_output(response)
+                    command_reports.append(command_report)
+
         current_goal.command_reports = command_reports
 
         return { 'goal_reports': state['goal_reports'] + [current_goal] }

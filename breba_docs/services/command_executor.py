@@ -99,6 +99,19 @@ class ContainerCommandExecutor(CommandExecutor):
         self.agent = agent
         self.socket_client = None
 
+    @classmethod
+    @contextlib.contextmanager
+    def executor_and_new_container(cls, agent: Agent):
+        execution_container = None
+        try:
+            execution_container = container_setup(agent)
+            time.sleep(0.5)
+            yield ContainerCommandExecutor(agent)
+        finally:
+            if execution_container:
+                execution_container.stop()
+                execution_container.remove()
+
     def get_input_message(self, text: str):
         instruction = self.agent.provide_input(text)
         if instruction == "breba-noop":
@@ -133,7 +146,7 @@ class ContainerCommandExecutor(CommandExecutor):
 
         return ''
 
-    def execute_command(self, command: [str]) -> CommandReport:
+    def execute_command(self, command: [str]) -> str:
         # If not yet part of a session, execute command in using session
         if not self.socket_client:
             with self.session() as session:
@@ -142,7 +155,7 @@ class ContainerCommandExecutor(CommandExecutor):
             command_directive = {"command": command}
             response = self.socket_client.send_message(json.dumps(command_directive))
             response = self.collect_response(response, self.socket_client)
-            return self.agent.analyze_output(response)
+            return response
 
     def execute_commands_sync(self, commands) -> list[CommandReport]:
         command_reports = []
@@ -167,6 +180,8 @@ class ContainerCommandExecutor(CommandExecutor):
     def session(self) -> CommandExecutor:
         """Using the with executor.session will run all commands in the same session"""
         with Client() as socket_client:
-            self.socket_client = socket_client
-            yield self
-            self.socket_client = None
+            try:
+                self.socket_client = socket_client
+                yield self
+            finally:
+                self.socket_client = None

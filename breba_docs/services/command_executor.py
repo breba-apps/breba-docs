@@ -1,4 +1,5 @@
 import abc
+import contextlib
 import json
 import os
 import shlex
@@ -16,6 +17,10 @@ from breba_docs.socket_server.client import Client
 class CommandExecutor(abc.ABC):
     @abc.abstractmethod
     def execute_commands_sync(self, command: [str]) -> list[CommandReport]:
+        pass
+
+    @abc.abstractmethod
+    def execute_command(self, command: [str]) -> list[CommandReport]:
         pass
 
 
@@ -51,6 +56,9 @@ class LocalCommandExecutor(CommandExecutor):
             return None
         elif instruction:
             return instruction
+
+    def execute_command(self, command):
+        raise Exception("Unimplemented")
 
     def execute_commands_sync(self, commands: list[str]) -> list[CommandReport]:
         process = pexpect.spawn('/bin/bash', encoding='utf-8', env={"PS1": ""}, echo=False)
@@ -89,6 +97,7 @@ class LocalCommandExecutor(CommandExecutor):
 class ContainerCommandExecutor(CommandExecutor):
     def __init__(self, agent: Agent):
         self.agent = agent
+        self.socket_client = None
 
     def get_input_message(self, text: str):
         instruction = self.agent.provide_input(text)
@@ -124,24 +133,40 @@ class ContainerCommandExecutor(CommandExecutor):
 
         return ''
 
+    def execute_command(self, command: [str]) -> CommandReport:
+        # If not yet part of a session, execute command in using session
+        if not self.socket_client:
+            with self.session() as session:
+                return session.execute_command(command)
+        else:
+            command_directive = {"command": command}
+            response = self.socket_client.send_message(json.dumps(command_directive))
+            response = self.collect_response(response, self.socket_client)
+            return self.agent.analyze_output(response)
+
     def execute_commands_sync(self, commands) -> list[CommandReport]:
-        report = []
+        command_reports = []
         execution_container = None
         try:
             execution_container = container_setup()
             time.sleep(0.5)
-            # Need to use a single executor because each executor will run in a separate terminal session
 
-            with Client() as socket_client:
+            with self.session() as session:
                 for command in commands:
-                    command = {"command": command}
-                    response = socket_client.send_message(json.dumps(command))
-                    response = self.collect_response(response, socket_client)
-                    agent_output = self.agent.analyze_output(response)
-                    report.append(agent_output)
-            return report
+                    command_report = session.execute_command(command)
+                    command_reports.append(command_report)
+                self.socket_client = None
+            return command_reports
 
         finally:
             if execution_container:
                 execution_container.stop()
                 execution_container.remove()
+
+    @contextlib.contextmanager
+    def session(self) -> CommandExecutor:
+        """Using the with executor.session will run all commands in the same session"""
+        with Client() as socket_client:
+            self.socket_client = socket_client
+            yield self
+            self.socket_client = None

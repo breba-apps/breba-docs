@@ -32,7 +32,7 @@ class Client:
             self.client_socket = None
 
     def stream_response(self, timeout=2):
-        """Read data from the server every 3 seconds until no more data is received."""
+        """Read data from the server every 2 seconds until no more data is received."""
         self.client_socket.settimeout(timeout)  # Set a timeout for the socket
 
         while True:
@@ -44,7 +44,8 @@ class Client:
                 break
 
     def read_response(self, timeout=2):
-        """Read data from the server every data is received or timeout occurs."""
+        """Read data from the server.
+        Returns accumulated data when no data is received for {timeout} seconds"""
         data_received = []
 
         try:

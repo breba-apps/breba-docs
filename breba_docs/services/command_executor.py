@@ -31,12 +31,11 @@ def collect_output(process, command_end_marker: str):
             time.sleep(0.5)
             output = process.read_nonblocking(1024, timeout=2)
             command_output += output
-            # Does this return bytes or a string?
             if command_end_marker in output:
                 print("Breaking on end marker")
                 break
         except pexpect.exceptions.TIMEOUT:
-            # ask agent if input is needed
+            print("Breaking due to timeout. Need to check if waiting for input.")
             break
         except pexpect.exceptions.EOF as e:
             print("End of process output.")

@@ -10,6 +10,7 @@ class Goal:
 @dataclass
 class CommandReport:
     command: str
+    improved_command: str | None
     success: bool | None
     insights: str | None
 
@@ -22,6 +23,7 @@ class CommandReport:
     def example_str(cls) -> str:
         return json.dumps({
             "command": "git clone https://github.com/Nodestream/nodestream.git",
+            "improved_command": None,
             "success": True,
             "insights": "The cloning process completed successfully with all objects received and deltas resolved."
         })

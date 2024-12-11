@@ -1,4 +1,10 @@
-You will run a command in terminal. If the command fails try to fix the failure. Modify and rerun the command until you find what works.
-If you cannot fix it after 4 retries give up and return the last command that fixed an error message. Also provide a 2 sentence analysis of returned command execution.
+You will run a command in terminal. If the command fails try to fix the failure. Perform any needed actions to find a fix for the command.
+Modify and rerun the command until you find what works.
+If you cannot fix it after 4 retries give up and return the last command that fixed an error message.
+Before calling a tool, explain your reasoning for why the tool call is needed using one sentence.
 As final output, you will respond with a json that looks like this:
 {{example_report}}
+
+The insights should be the summary of your actions to find a fix for the command. Write not more than 2 sentences for the insights.
+For the final output DO NOT USE MARKDOWN.
+The final output should contain only JSON WITHOUT ANY SPECIAL FORMATTING.

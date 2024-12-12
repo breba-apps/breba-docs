@@ -20,14 +20,6 @@ Fork the repository. Then clone it to your local machine:
 git clone https://github.com/breba-apps/you-username/breba-docs.git
 ```
 
-### Configure OpenAI key
-Create a .env file similar to .env.sample
-```
-BREBA_IMAGE=breba-image
-OPENAI_API_KEY=
-```
-
-
 ### Run the code
 ```shell
 cd breba-docs

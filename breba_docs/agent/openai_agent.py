@@ -15,12 +15,9 @@ class OpenAIAgent(Agent):
 You are assisting a software program to validate contents of a document.
 """
 
-    INPUT_FIRST_MESSAGE = """
-    Does the last sentence in the command output contain a prompt asking the user for input in order to complete the command execution? 
-    Answer with "Yes" if the last thing in the command output is a prompt asking the user for some input.
-    Answer with "No" if the last thing in the command output is not a user prompt:
+    INPUT_FIRST_MESSAGE = """Ensure that if there's any indication that the prompt is awaiting input (with no subsequent text indicating an answer), respond with "Yes." If the output contains the prompt but implies it has been answered or there is additional text, respond with "No."
     
-    Important: If there is additional text after the user prompt, that means the prompt was answered your answer must be "No"
+    Below is the command output:
     """
 
     INPUT_FIRST_MESSAGE_VERIFY = """

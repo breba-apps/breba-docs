@@ -67,6 +67,7 @@ def test_fetch_commands(mocker, openai_agent, doc):
 @pytest.mark.integration
 def test_fetch_modify_file_commands(mocker, openai_agent):
     report = CommandReport(command="nodestream run simple -v",
+                           improved_command="nodestream run sample -v",
                            success=False,
                            insights="The command failed because there is no pipeline named 'simple' found in the "
                                     "project. A suggestion was provided to check if 'sample' was intended instead.")

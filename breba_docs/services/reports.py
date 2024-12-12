@@ -17,7 +17,7 @@ class CommandReport:
     @classmethod
     def from_string(cls, message: str) -> "CommandReport":
         data = json.loads(message)
-        return cls(data["command"], data["success"], data["insights"])
+        return cls(data["command"], data["improved_command"], data["success"], data["insights"])
 
     @classmethod
     def example_str(cls) -> str:

@@ -35,8 +35,8 @@ def test_identify_goals():
 def test_commands_succeeded():
     # Create CommandReports and a GoalReport
     command_reports = [
-        CommandReport(command="echo Hello", success=True, insights=None),
-        CommandReport(command="ls -la", success=True, insights=None),
+        CommandReport(command="echo Hello", success=True, insights=None, improved_command=None),
+        CommandReport(command="ls -la", success=True, insights=None, improved_command=None),
     ]
     goal_report = GoalReport(
         Goal(name="Sample Goal", description="Test goal for identify_commands"),
@@ -58,8 +58,8 @@ def test_commands_succeeded():
 
 def test_commands_failed():
     command_reports = [
-        CommandReport(command="echo Hello", success=True, insights=None),
-        CommandReport(command="ls -la", success=False, insights=None),
+        CommandReport(command="echo Hello", success=True, insights=None, improved_command=None),
+        CommandReport(command="ls -la", success=False, insights=None, improved_command=None),
     ]
     goal_report = GoalReport(
         Goal(name="Sample Goal", description="Test goal for identify_commands"),

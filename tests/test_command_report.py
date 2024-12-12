@@ -1,5 +1,3 @@
-import pytest
-
 from breba_docs.services.reports import CommandReport
 
 

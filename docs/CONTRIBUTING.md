@@ -21,12 +21,16 @@ git clone https://github.com/breba-apps/you-username/breba-docs.git
 ```
 
 ### Configure OpenAI key
-Create a .env file similar to .env.sample
+Create a `.env` file similar to `.env.sample`
 ```
 BREBA_IMAGE=breba-image
 OPENAI_API_KEY=
 ```
-
+### Check docker setup
+Docker should run without errors
+```
+docker ps
+```
 
 ### Run the code
 ```shell

@@ -1,5 +1,3 @@
-import json
-
 import pytest
 from dotenv import load_dotenv
 
@@ -51,4 +49,4 @@ def test_command_with_missing_setup(agent):
     command_report = CommandReport.from_string(messages[-1].content)
 
     assert command_report.command == "cd my_project"
-    assert command_report.improved_command is None
+    assert command_report.improved_command == "mkdir my_project && cd my_project"

@@ -13,6 +13,7 @@ server: asyncio.Server | None = None
 logger = logging.getLogger(__name__)
 
 
+# TODO rename to stream_output
 async def collect_output(process, writer: StreamWriter, end_marker: str):
     while True:
         try:
@@ -29,8 +30,13 @@ async def collect_output(process, writer: StreamWriter, end_marker: str):
             logger.info("End of process output.")
             break
 
+async def command_scheduler_loop(commands_queue: asyncio.Queue, process, writer: StreamWriter):
+    while True:
+        command = await commands_queue.get()
+        await handle_command(command, process, writer)
+        await asyncio.sleep(0.1)
 
-def handle_command(command, process, writer: StreamWriter):
+async def handle_command(command, process, writer: StreamWriter):
     if command:
         # basically echo the command, but have to escape quotes first
         escaped_command = shlex.quote(command)
@@ -41,10 +47,7 @@ def handle_command(command, process, writer: StreamWriter):
         command = f"{command} && echo {command_end_marker}"
         process.sendline(command)
 
-        # start executing collect_output, but pass control back to caller in order to
-        # handle additional commands/inputs
-        task = asyncio.create_task(collect_output(process, writer, command_end_marker))
-        return task
+        await collect_output(process, writer, command_end_marker)
 
 
 async def stop_server():
@@ -60,7 +63,8 @@ async def handle_client(reader: StreamReader, writer: StreamWriter):
     process = pexpect.spawn('/bin/bash', encoding='utf-8', env={"PS1": ""}, echo=False)
     process.sendline('. .venv/bin/activate')
 
-    output_tasks = []
+    commands_queue = asyncio.Queue()
+    command_scheduler_task = asyncio.create_task(command_scheduler_loop(commands_queue, process, writer))
     while True:
         data = await reader.read(1024)
         if not data:
@@ -74,7 +78,7 @@ async def handle_client(reader: StreamReader, writer: StreamWriter):
             await stop_server()  # First stop the server
             break  # then break out of the loop to close the connection
         else:
-            output_tasks.append(handle_command(command, process, writer))
+            await commands_queue.put(command)
 
         input_text = data.get("input")
 
@@ -84,10 +88,8 @@ async def handle_client(reader: StreamReader, writer: StreamWriter):
         if input_text:
             process.sendline(input_text)
 
-    for task in output_tasks:
-        # Check for None in case task has completed
-        if task:
-            task.cancel()
+    if command_scheduler_task:
+        command_scheduler_task.cancel()
 
     # TODO: this may be an issue because when the server is closed on quit doesn't actually get here
     writer.write("Closing writer...".encode())

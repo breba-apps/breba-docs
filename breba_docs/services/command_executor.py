@@ -118,35 +118,17 @@ class ContainerCommandExecutor(CommandExecutor):
         elif instruction:
             return json.dumps({"input": instruction})
 
-    def collect_response(self, response: str, socket_client: Client):
-        """
-        Collect a response from the command executor and any additional responses that come back based on if the AI
-        thinks that the command is waiting for input or not. If AI thinks it is waiting for input, then we send in the
-        input and await the additional response. If AI does not think it is waiting for input, we just return the
-        response.
-
-        Args:
-            response (str): The initial response from the command executor.
-            socket_client (Client): The client to send messages to and receive responses from.
-
-        Returns:
-            str: The full response including any additional responses due to input.
-        """
+    def should_restart_retries(self, response: list[str]):
+        # TODO: somehow this should know when the command is completed otherwise we are making multiple request
+        #  to AI asking to provide input to a command that already completed
         if response:
-            input_message = self.get_input_message(response)
-            input_response = ""
+            input_message = self.get_input_message(response[-1])
             if input_message:
-                if socket_client.send_message(input_message):
-                    input_response = socket_client.read_response()
-                else:
-                    input_response = "Failed to send input due to socket error. Check log for details."
-            # TODO: This additional response covers for cases where at the first attempt the response comes back empty
-            #  Due to a timeout. But really it is just a slow executing command and this works as backup
-            #  Should probably introduce a max wait time and loop over at some interval to double check response
-            additional_response = self.collect_response(socket_client.read_response(), socket_client)
-            return response + input_response + additional_response
+                if self.socket_client.send_message(input_message):
+                    return True
 
-        return ''
+        return False
+
 
     def execute_command(self, command: [str]) -> str:
         # If not yet part of a session, execute command in using session
@@ -156,10 +138,9 @@ class ContainerCommandExecutor(CommandExecutor):
         else:
             command_directive = {"command": command}
             if self.socket_client.send_message(json.dumps(command_directive)):
-                response = self.socket_client.read_response()
+                response = self.socket_client.read_response(should_restart_callback=self.should_restart_retries)
             else:
                 response = "Error occurred due to socket error. See log for details"
-            response = self.collect_response(response, self.socket_client)
             return response
 
     def execute_commands_sync(self, commands) -> list[CommandReport]:
@@ -171,7 +152,8 @@ class ContainerCommandExecutor(CommandExecutor):
 
             with self.session() as session:
                 for command in commands:
-                    command_report = session.execute_command(command)
+                    response = session.execute_command(command)
+                    command_report = self.agent.analyze_output(response)
                     command_reports.append(command_report)
                 self.socket_client = None
             return command_reports

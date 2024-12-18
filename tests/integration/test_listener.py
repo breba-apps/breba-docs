@@ -16,7 +16,7 @@ async def server_connection(request) -> (StreamReader, StreamWriter):
     with patch("breba_docs.socket_server.listener.command_end_marker", return_value=request.param[-1]):
         end_marker = breba_docs.socket_server.listener.command_end_marker()
         mock = MagicMock()
-        mock.read_nonblocking.side_effect = ["Hello", end_marker]
+        mock.read_nonblocking.side_effect = request.param
         mock.sendline = MagicMock()
         mock.close = MagicMock()
         with patch("breba_docs.socket_server.listener.pexpect.spawn", return_value=mock):

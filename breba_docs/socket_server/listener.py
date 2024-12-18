@@ -50,7 +50,7 @@ async def handle_command(command, process, writer: StreamWriter):
     if command:
         # basically echo the command, but have to escape quotes first
         escaped_command = shlex.quote(command)
-        process.sendline(f"echo {escaped_command}\n")
+        process.sendline(f"echo $ {escaped_command}\n")
 
         end_marker = command_end_marker()
         command = f"{command} && echo {end_marker}"
@@ -95,6 +95,8 @@ async def handle_client(reader: StreamReader, writer: StreamWriter):
         #   Elapsed, then the client will not receive any additional output from the input instruction and all the
         #   consequences
         if input_text:
+            # TODO: write to client the input, because in terminal when you type text to respond to a prompt,
+            #  the text shows up after the prompt. Simply sending it to process does not do that
             process.sendline(input_text)
 
     if command_scheduler_task:

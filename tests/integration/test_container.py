@@ -67,14 +67,16 @@ def test_execute_command(container):
     # TODO: Needs to work without sleep anywhere in this code. Here We wait for listener to start up.
     #  Connect to server should wait for server to come up
     time.sleep(2)
-    client = Client(("127.0.0.1", PORT))
-    with client:
+    with Client(("127.0.0.1", PORT)) as  client:
         command = {"command": 'pip uninstall pexpect'}
-        response = client.send_message(json.dumps(command))
+        client.send_message(json.dumps(command))
+        response = client.read_response()
         command = {"input": 'Y'}
-        response = ''.join([response, client.send_message(json.dumps(command))])
+        client.send_message(json.dumps(command))
+        response = ''.join([response, client.read_response()])
         command = {"command": 'quit'}
-        response = ''.join([response, client.send_message(json.dumps(command))])
+        client.send_message(json.dumps(command))
+        response = ''.join([response, client.read_response()])
     assert "Quit command received" in response
     assert "Proceed (Y/n)" in response
     assert "Successfully uninstalled" in response
@@ -85,10 +87,10 @@ def test_execute_ampersand_command(container):
     # TODO: Needs to work without sleep anywhere in this code. Here We wait for listener to start up.
     #  Connect to server should wait for server to come up
     time.sleep(2)
-    client = Client(("127.0.0.1", PORT))
-    with client:
+    with Client(("127.0.0.1", PORT)) as client:
         command = {"command": 'mkdir test && cd test && pwd && echo "more testing is needed"'}
-        response = client.send_message(json.dumps(command))
+        client.send_message(json.dumps(command))
+        response = client.read_response()
     assert "/usr/src/test" in response
     assert "No such file or directory" not in response
 
@@ -98,13 +100,15 @@ def test_multiple_connections(container):
     time.sleep(2)
     with Client(("127.0.0.1", PORT)) as client:
         command = {"command": 'mkdir test && cd test && pwd && echo "more testing is needed"'}
-        response = client.send_message(json.dumps(command))
+        client.send_message(json.dumps(command))
+        response = client.read_response()
 
     assert "/usr/src/test" in response
     assert "No such file or directory" not in response
 
     with Client(("127.0.0.1", PORT)) as client:
         command = {"command": 'mkdir test2 && cd test2 && pwd && echo "more testing is needed"'}
-        response = client.send_message(json.dumps(command))
+        client.send_message(json.dumps(command))
+        response = client.read_response()
     assert "/usr/src/test2" in response
     assert "No such file or directory" not in response

@@ -65,10 +65,10 @@ class Client:
             try:
                 print(f"Sending: {message}")
                 self.client_socket.sendall(message.encode())
+                return True
             except socket.error as e:
                 print(f"Error sending message: {e}")
-
-            return self.read_response()
+                return False
         else:
             print("No connection to server. Cannot send message.")
             raise Exception("No connection to server. Cannot send message.")

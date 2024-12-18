@@ -136,7 +136,10 @@ class ContainerCommandExecutor(CommandExecutor):
             input_message = self.get_input_message(response)
             input_response = ""
             if input_message:
-                input_response = socket_client.send_message(input_message)
+                if socket_client.send_message(input_message):
+                    input_response = socket_client.read_response()
+                else:
+                    input_response = "Failed to send input due to socket error. Check log for details."
             # TODO: This additional response covers for cases where at the first attempt the response comes back empty
             #  Due to a timeout. But really it is just a slow executing command and this works as backup
             #  Should probably introduce a max wait time and loop over at some interval to double check response
@@ -152,7 +155,10 @@ class ContainerCommandExecutor(CommandExecutor):
                 return session.execute_command(command)
         else:
             command_directive = {"command": command}
-            response = self.socket_client.send_message(json.dumps(command_directive))
+            if self.socket_client.send_message(json.dumps(command_directive)):
+                response = self.socket_client.read_response()
+            else:
+                response = "Error occurred due to socket error. See log for details"
             response = self.collect_response(response, self.socket_client)
             return response
 

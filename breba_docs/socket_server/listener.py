@@ -19,6 +19,9 @@ async def collect_output(process, writer: StreamWriter, end_marker: str):
         try:
             output = process.read_nonblocking(1024, timeout=1)
             logger.info(output.strip())
+            # TODO: handle unexpected exceptions gracefully. Currently client doesn't receive anything in case of
+            #  unexpected error and may be stuck waiting for response indefinitely. The client could implement a timeout,
+            #  it would save some time to know that things went badly
             writer.write(output.encode())
             await writer.drain()
             if end_marker in output:
@@ -29,6 +32,9 @@ async def collect_output(process, writer: StreamWriter, end_marker: str):
         except pexpect.exceptions.EOF as e:
             logger.info("End of process output.")
             break
+        except Exception as e:
+            logger.exception(e)
+            break
 
 async def command_scheduler_loop(commands_queue: asyncio.Queue, process, writer: StreamWriter):
     while True:
@@ -36,18 +42,21 @@ async def command_scheduler_loop(commands_queue: asyncio.Queue, process, writer:
         await handle_command(command, process, writer)
         await asyncio.sleep(0.1)
 
+def command_end_marker():
+    command_id = str(uuid.uuid4())
+    return f"Completed {command_id}"
+
 async def handle_command(command, process, writer: StreamWriter):
     if command:
         # basically echo the command, but have to escape quotes first
         escaped_command = shlex.quote(command)
         process.sendline(f"echo {escaped_command}\n")
 
-        command_id = str(uuid.uuid4())
-        command_end_marker = f"Completed {command_id}"
-        command = f"{command} && echo {command_end_marker}"
+        end_marker = command_end_marker()
+        command = f"{command} && echo {end_marker}"
         process.sendline(command)
 
-        await collect_output(process, writer, command_end_marker)
+        await collect_output(process, writer, end_marker)
 
 
 async def stop_server():

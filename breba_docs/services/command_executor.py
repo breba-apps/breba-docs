@@ -3,6 +3,7 @@ import contextlib
 import json
 import os
 import shlex
+import socket
 import time
 import uuid
 
@@ -129,16 +130,44 @@ class ContainerCommandExecutor(CommandExecutor):
 
         return False
 
+    # TODO: much of the logic dealing with stream response collection should move to stream response
+    def read_response(self, command_id, timeout=0.5, max_retries=2):
+        """Read data from the server with custom retry logic."""
+        retries = 0
+        data_received = []
+        while True:
+            try:
+                for data in self.socket_client.stream_response(timeout):
+                    print(data)
+                    data_received.append(data)
+                    if f"Completed {command_id}" in data:
+                        break
+                    retries = 0  # Every time we have successful read, we want to reset retries
 
-    def execute_command(self, command: [str]) -> str:
+                return ''.join(data_received)
+            except socket.timeout:
+                # We hit a timeout, decide if we should retry
+                retries += 1
+                print(f"Socket Client: No new Data received in {timeout} seconds (attempt {retries}/{max_retries})")
+                if self.should_restart_retries(data_received):
+                    retries = 0
+                if retries >= max_retries:
+                    print("Max retries reached.")
+                    return ''.join(data_received)
+            except socket.error as e:
+                print(f"Socket Client: Error reading from socket: {e}")
+                return ''.join(data_received)
+
+    def execute_command(self, command: str) -> str:
         # If not yet part of a session, execute command in using session
         if not self.socket_client:
             with self.session() as session:
                 return session.execute_command(command)
         else:
-            command_directive = {"command": command}
+            command_id = str(uuid.uuid4())
+            command_directive = {"command": command, "command_id": command_id}
             if self.socket_client.send_message(json.dumps(command_directive)):
-                response = self.socket_client.read_response(should_restart_callback=self.should_restart_retries)
+                response = self.read_response(command_id)
             else:
                 response = "Error occurred due to socket error. See log for details"
             return response
@@ -153,6 +182,7 @@ class ContainerCommandExecutor(CommandExecutor):
             with self.session() as session:
                 for command in commands:
                     response = session.execute_command(command)
+                    # TODO: Pass the command to analyze output, otherwise it doesn't know what command we were even trying to execute
                     command_report = self.agent.analyze_output(response)
                     command_reports.append(command_report)
                 self.socket_client = None

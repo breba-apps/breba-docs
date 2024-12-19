@@ -5,7 +5,6 @@ import logging
 from asyncio import StreamReader, StreamWriter
 
 import pexpect
-import uuid
 
 PORT = 44440
 server: asyncio.Server | None = None
@@ -42,20 +41,27 @@ async def command_scheduler_loop(commands_queue: asyncio.Queue, process, writer:
         await handle_command(command, process, writer)
         await asyncio.sleep(0.1)
 
-def command_end_marker():
-    command_id = str(uuid.uuid4())
+def command_end_marker(command_id):
     return f"Completed {command_id}"
 
-async def handle_command(command, process, writer: StreamWriter):
+async def handle_command(command: dict, process, writer: StreamWriter):
+    logger.info(f"command: {command}")
     if command:
+        command_text = command.get("command")
+        command_id = command.get("command_id")
         # basically echo the command, but have to escape quotes first
-        escaped_command = shlex.quote(command)
-        process.sendline(f"echo $ {escaped_command}\n")
+        escaped_command = shlex.quote(command_text)
+        echo_text = f"echo $ {escaped_command}\n"
+        process.sendline(echo_text)
+        logger.info(f"Sending to process echo: {echo_text}")
 
-        end_marker = command_end_marker()
-        command = f"{command} && echo {end_marker}"
+        end_marker = command_end_marker(command_id)
+        command = f"{command_text} && echo {end_marker}"
         process.sendline(command)
+        logger.info(f"Sending to process command: {command}")
 
+        # TODO: when collect_output is stuck waiting for input, but input never comes, then this never returns and
+        #  new commands that are put on the queue are never picked up since the loop is waiting for this to return
         await collect_output(process, writer, end_marker)
 
 
@@ -86,8 +92,8 @@ async def handle_client(reader: StreamReader, writer: StreamWriter):
             writer.write("Quit command received, closing connection.".encode())
             await stop_server()  # First stop the server
             break  # then break out of the loop to close the connection
-        else:
-            await commands_queue.put(command)
+        elif command:
+            await commands_queue.put(data)
 
         input_text = data.get("input")
 
@@ -97,6 +103,7 @@ async def handle_client(reader: StreamReader, writer: StreamWriter):
         if input_text:
             # TODO: write to client the input, because in terminal when you type text to respond to a prompt,
             #  the text shows up after the prompt. Simply sending it to process does not do that
+            logger.info(f"Sending to process input: {input_text}")
             process.sendline(input_text)
 
     if command_scheduler_task:

@@ -38,35 +38,10 @@ class Client:
         while True:
             data = self.client_socket.recv(16384)
             if data:
-                yield data
+                yield data.decode()
             else:
                 # If no data is received, break the loop.
                 break
-
-    def read_response(self, timeout=0.5, should_restart_callback=lambda x: False, max_retries=2):
-        """Read data from the server with custom retry logic."""
-        retries = 0
-        data_received = []
-        while True:
-            try:
-                for data in self.stream_response(timeout):
-                    print(data.decode())
-                    data_received.append(data.decode())
-                    retries = 0  # Every time we have successful read, we want to reset retries
-
-                return ''.join(data_received)
-            except socket.timeout:
-                # We hit a timeout, decide if we should retry
-                retries += 1
-                print(f"Socket Client: No new Data received in {timeout} seconds (attempt {retries}/{max_retries})")
-                if should_restart_callback(data_received):
-                    retries = 0
-                if retries >= max_retries:
-                    print("Max retries reached.")
-                    return ''.join(data_received)
-            except socket.error as e:
-                print(f"Socket Client: Error reading from socket: {e}")
-                return ''.join(data_received)
 
     def send_message(self, message):
         """Send a message to the server."""

@@ -42,7 +42,7 @@ command_outputs = ["Hello", "Completed test"]
 @pytest.mark.integration
 async def test_echo_command(server, server_connection, expected_outputs):
     mock_process, reader, writer = server_connection
-    writer.write(json.dumps({"command": "echo Hello"}).encode())
+    writer.write(json.dumps({"command": "echo Hello", "command_id": "test"}).encode())
     await writer.drain()
 
     data = b""
@@ -57,4 +57,4 @@ async def test_echo_command(server, server_connection, expected_outputs):
 
     mock_process.sendline.assert_called_with("echo Hello && echo Completed test")
     # Test prompt being echoed
-    mock_process.sendline.assert_any_call("echo 'echo Hello'\n")
+    mock_process.sendline.assert_any_call("echo $ 'echo Hello'\n")

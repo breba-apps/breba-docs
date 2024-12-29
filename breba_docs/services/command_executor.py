@@ -130,7 +130,8 @@ class ContainerCommandExecutor(CommandExecutor):
 
         return False
 
-    # TODO: much of the logic dealing with stream response collection should move to stream response
+    # TODO: much of the logic dealing with stream response collection should move to stream response.
+    #  This could be done by data_received.append(data) moving to stream_response
     def read_response(self, command_id, timeout=0.5, max_retries=2):
         """Read data from the server with custom retry logic."""
         retries = 0
@@ -138,9 +139,10 @@ class ContainerCommandExecutor(CommandExecutor):
         while True:
             try:
                 for data in self.socket_client.stream_response(timeout):
-                    print(data)
+                    print(f"Data from Socket Client: {data}")
                     data_received.append(data)
                     if f"Completed {command_id}" in data:
+                        data_received[-1] = data_received[-1].replace(f"Completed {command_id}", "")
                         break
                     retries = 0  # Every time we have successful read, we want to reset retries
 

@@ -95,9 +95,9 @@ class LocalCommandExecutor(CommandExecutor):
 
 
 class ContainerCommandExecutor(CommandExecutor):
-    def __init__(self, agent: Agent):
+    def __init__(self, agent: Agent, socket_client: Client = None):
         self.agent = agent
-        self.socket_client = None
+        self.socket_client = socket_client
 
     @classmethod
     @contextlib.contextmanager
@@ -119,16 +119,29 @@ class ContainerCommandExecutor(CommandExecutor):
         elif instruction:
             return json.dumps({"input": instruction})
 
-    def should_restart_retries(self, response: list[str]):
-        # TODO: somehow this should know when the command is completed otherwise we are making multiple request
-        #  to AI asking to provide input to a command that already completed
-        if response:
-            input_message = self.get_input_message(response[-1])
-            if input_message:
-                if self.socket_client.send_message(input_message):
-                    return True
 
-        return False
+    def create_should_restart_retries(self):
+        response_length = 0
+
+        def maybe_get_input(response: list[str]) -> str | None:
+            nonlocal response_length
+            # Only try to get input if new data was received
+            if response and len(response) != response_length:
+                response_length = len(response)
+                return self.get_input_message(response[-1])
+
+            return None
+
+        def should_restart_retries(response: list[str]):
+            input_message = maybe_get_input(response)
+
+            if input_message:
+                # We will only restart retries if we have successfully written input to the socket
+                return self.socket_client.send_message(input_message)
+
+            return False
+
+        return should_restart_retries
 
     # TODO: much of the logic dealing with stream response collection should move to stream response.
     #  This could be done by data_received.append(data) moving to stream_response
@@ -136,6 +149,7 @@ class ContainerCommandExecutor(CommandExecutor):
         """Read data from the server with custom retry logic."""
         retries = 0
         data_received = []
+        should_restart_retries = self.create_should_restart_retries()
         while True:
             try:
                 for data in self.socket_client.stream_response(timeout):
@@ -151,7 +165,8 @@ class ContainerCommandExecutor(CommandExecutor):
                 # We hit a timeout, decide if we should retry
                 retries += 1
                 print(f"Socket Client: No new Data received in {timeout} seconds (attempt {retries}/{max_retries})")
-                if self.should_restart_retries(data_received):
+                if should_restart_retries(data_received):
+                    print(f"Socket Client: Restarting retries")
                     retries = 0
                 if retries >= max_retries:
                     print("Max retries reached.")

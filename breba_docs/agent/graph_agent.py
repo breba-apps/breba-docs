@@ -133,7 +133,7 @@ class GraphAgent:
         messages.append(model_response)
         commands = [cmd.strip() for cmd in model_response.content.split(",")]
 
-        command_reports = [CommandReport(command, None, None) for command in commands]
+        command_reports = [CommandReport(command, None, None, None) for command in commands]
         goal_report = GoalReport(current_goal, command_reports)
 
         return {

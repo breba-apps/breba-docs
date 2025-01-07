@@ -1,9 +1,11 @@
 import time
 import unittest
+from unittest.mock import MagicMock
 
 import pytest
 
-from terminal_stream.command_streamer import CommandStreamer, TerminatedProcessError
+from terminal_stream.command_streamer import CommandStreamer, TerminatedProcessError, ReadWriteError
+
 
 @pytest.fixture(params=[
         ("ls dog", "ls: dog: No such file or directory\n"),
@@ -68,3 +70,20 @@ class TestCommandStreamer:
 
         assert output[1] == expect_output
 
+    def test_read_nonblocking_write_error(self):
+        self.streamer.process.stdin.write = MagicMock(side_effect=OSError("Mocked OSError"))
+
+        with pytest.raises(ReadWriteError) as exc:
+            self.streamer.send_command("echo Hello")
+
+        exc.match("Failed to write to stdin due to OSError")
+
+
+    def test_read_nonblocking_read_error(self):
+        self.streamer.process.stdout.read = MagicMock(side_effect=OSError("Mocked OSError"))
+
+        self.streamer.send_command("echo Hello")
+        with pytest.raises(ReadWriteError) as exc:
+            self.streamer.read_nonblocking()
+
+        exc.match("Failed to read from .* due to OSError")

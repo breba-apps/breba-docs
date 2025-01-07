@@ -1,17 +1,23 @@
 import subprocess
-import time
 from select import select
 
 class TerminatedProcessError(Exception):
     pass
 
+class ReadWriteError(Exception):
+    pass
+
 
 def read_fd(readable_fds, fd_to_read):
-    if fd_to_read in readable_fds:
-        data = fd_to_read.peek()
-        fd_to_read.read(len(data))  # move the cursor before decoding output
-        return data.decode()
-    return None  # just being explicit. None is returned if the fd is not readable
+    try:
+        if fd_to_read in readable_fds:
+            data = fd_to_read.peek()
+            fd_to_read.read(len(data))  # move the cursor before decoding output
+            return data.decode()
+        return None  # just being explicit. None is returned if the fd is not readable
+    except OSError as e:
+        raise ReadWriteError(f"Failed to read from {fd_to_read.name} due to OSError") from e
+
 
 
 class CommandStreamer:
@@ -19,9 +25,12 @@ class CommandStreamer:
         self.process = subprocess.Popen('/bin/bash', stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     def send_command(self, command):
-        command = f"{command}\n"
-        self.process.stdin.write(command.encode())
-        self.process.stdin.flush()
+        try:
+            command = f"{command}\n"
+            self.process.stdin.write(command.encode())
+            self.process.stdin.flush()
+        except OSError as e:
+            raise ReadWriteError(f"Failed to write to stdin due to OSError") from e
 
     def read_nonblocking(self, timeout=0.1):
         """
@@ -39,10 +48,9 @@ class CommandStreamer:
         if readables:
             std_out = read_fd(readables, self.process.stdout)
             std_err = read_fd(readables, self.process.stderr)
-
             return std_out, std_err
-        else:
-            raise TimeoutError(f"No data read before reaching timout of {timeout}s")
+
+        raise TimeoutError(f"No data read before reaching timout of {timeout}s")
 
 
     def close(self):

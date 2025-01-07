@@ -5,9 +5,17 @@ import pytest
 
 from terminal_stream.command_streamer import CommandStreamer, TerminatedProcessError
 
+@pytest.fixture(params=[
+        ("ls dog", "ls: dog: No such file or directory\n"),
+        ("cd dog", "/bin/bash: line 1: cd: dog: No such file or directory\n"),
+        ("vim dog", "Vim: Warning: Output is not to a terminal\nVim: Warning: Input is not from a terminal\n"),
+    ])
+def error_commands(request):
+    yield request.param
 
-class TestCommandStreamer(unittest.TestCase):
-    def setUp(self):
+class TestCommandStreamer:
+    @pytest.fixture(autouse=True)
+    def streamer(self):
         self.streamer = CommandStreamer()
 
     def test_stream_nonblocking(self):
@@ -39,4 +47,24 @@ class TestCommandStreamer(unittest.TestCase):
 
         with pytest.raises(TerminatedProcessError, match="Process is terminated with return code -9"):
             self.streamer.read_nonblocking(0.1)
+
+    def test_read_with_intput_response(self):
+        self.streamer.send_command('read -p "Please enter your name: " user_name')
+        self.streamer.send_command('dog')
+
+        with pytest.raises(TimeoutError):
+            self.streamer.read_nonblocking(0.1)
+
+        self.streamer.send_command('echo $user_name')
+        output_result = self.streamer.read_nonblocking(0.1)
+
+        assert output_result == 'dog\n'
+
+    def test_read_std_err(self, error_commands):
+        command, expect_output =error_commands
+        self.streamer.send_command(command)
+
+        output = self.streamer.read_nonblocking()
+
+        assert output == expect_output
 

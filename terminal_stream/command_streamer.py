@@ -7,7 +7,6 @@ class TerminatedProcessError(Exception):
 class ReadWriteError(Exception):
     pass
 
-
 def read_fd(readable_fds, fd_to_read):
     try:
         if fd_to_read in readable_fds:
@@ -17,8 +16,6 @@ def read_fd(readable_fds, fd_to_read):
         return None  # just being explicit. None is returned if the fd is not readable
     except OSError as e:
         raise ReadWriteError(f"Failed to read from {fd_to_read.name} due to OSError") from e
-
-
 
 class CommandStreamer:
     def __init__(self):
@@ -51,7 +48,6 @@ class CommandStreamer:
             return std_out, std_err
 
         raise TimeoutError(f"No data read before reaching timout of {timeout}s")
-
 
     def close(self):
         self.process.stdin.close()

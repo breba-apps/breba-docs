@@ -23,14 +23,14 @@ class TestCommandStreamer:
 
         output = self.streamer.read_nonblocking()
 
-        assert output == "Hello\n"  # newline is part of echo command
+        assert output[0] == "Hello\n"  # newline is part of echo command
 
     def test_stream_nonblocking_sleeping_command(self):
         self.streamer.send_command("sleep 1 && echo Hello")
 
         output = self.streamer.read_nonblocking(1.5)
 
-        assert output == "Hello\n"
+        assert output[0] == "Hello\n"
 
     def test_stream_nonblocking_sleeping_command_timeout(self):
         self.streamer.send_command("sleep 1 && echo Hello")
@@ -58,7 +58,7 @@ class TestCommandStreamer:
         self.streamer.send_command('echo $user_name')
         output_result = self.streamer.read_nonblocking(0.1)
 
-        assert output_result == 'dog\n'
+        assert output_result[0] == 'dog\n'
 
     def test_read_std_err(self, error_commands):
         command, expect_output =error_commands
@@ -66,5 +66,5 @@ class TestCommandStreamer:
 
         output = self.streamer.read_nonblocking()
 
-        assert output == expect_output
+        assert output[1] == expect_output
 

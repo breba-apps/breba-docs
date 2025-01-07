@@ -5,6 +5,15 @@ from select import select
 class TerminatedProcessError(Exception):
     pass
 
+
+def read_fd(readable_fds, fd_to_read):
+    if fd_to_read in readable_fds:
+        data = fd_to_read.peek()
+        fd_to_read.read(len(data))  # move the cursor before decoding output
+        return data.decode()
+    return None  # just being explicit. None is returned if the fd is not readable
+
+
 class CommandStreamer:
     def __init__(self):
         self.process = subprocess.Popen('/bin/bash', stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -14,17 +23,6 @@ class CommandStreamer:
         self.process.stdin.write(command.encode())
         self.process.stdin.flush()
 
-    def get_readable_fd(self, timeout):
-        """
-        This will return the first readable file descriptor
-        :param timeout: how long to wait for a file descriptor to become readable
-        :return: the first readable file descriptor
-        """
-        readable, _, _ = select([self.process.stdout, self.process.stderr], [], [], timeout)
-        if not readable:
-            raise TimeoutError(f"No data read before reaching timout of {timeout}s")
-        return readable[0]
-
     def read_nonblocking(self, timeout=0.1):
         """
         Reads from stdout.
@@ -33,20 +31,18 @@ class CommandStreamer:
         :return: string output from the process stdout
         :raise TimeoutError: if no data is read before timeout
         """
-        return next(self.stream_nonblocking(timeout))
-
-    def stream_nonblocking(self, timeout=0.1):
         # TODO: what happens if there is an error
-        # TODO: test for process ending inside the while loop
         if self.process.poll() is not None:
             raise TerminatedProcessError(f"Process is terminated with return code {self.process.returncode}")
-        readable = self.get_readable_fd(timeout)
+        readables, _, _ = select([self.process.stdout, self.process.stderr], [], [], timeout)
 
-        while readable:
-            output = readable.peek()
-            yield output.decode()
-            readable.read(len(output))
-            readable = self.get_readable_fd(timeout)
+        if readables:
+            std_out = read_fd(readables, self.process.stdout)
+            std_err = read_fd(readables, self.process.stderr)
+
+            return std_out, std_err
+        else:
+            raise TimeoutError(f"No data read before reaching timout of {timeout}s")
 
 
     def close(self):

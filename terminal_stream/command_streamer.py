@@ -31,13 +31,13 @@ class CommandStreamer:
 
     def read_nonblocking(self, timeout=0.1):
         """
-        Reads from stdout.
+        Reads from stdout and std_err. Timeout is used to wait for data. But as soon as data is read,
+        the function returns
 
-        :param timeout:
+        :param timeout: timeout in seconds
         :return: string output from the process stdout
         :raise TimeoutError: if no data is read before timeout
         """
-        # TODO: what happens if there is an error
         if self.process.poll() is not None:
             raise TerminatedProcessError(f"Process is terminated with return code {self.process.returncode}")
         readables, _, _ = select([self.process.stdout, self.process.stderr], [], [], timeout)

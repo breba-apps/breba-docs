@@ -43,7 +43,6 @@ async def command_scheduler_loop(commands_queue: asyncio.Queue, process, writer:
     while True:
         command = await commands_queue.get()
         await handle_command(command, process, writer)
-        await asyncio.sleep(0.1)
 
 def command_end_marker(command_id):
     return f"Completed {command_id}"

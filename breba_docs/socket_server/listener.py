@@ -16,14 +16,15 @@ async def stream_output(process: CommandStreamer, writer: StreamWriter, end_mark
     while True:
         try:
             output, err = process.read_nonblocking(timeout=1)
-            logger.info(output.strip())
             # TODO: handle unexpected exceptions gracefully. Currently client doesn't receive anything in case of
             #  unexpected error and may be stuck waiting for response indefinitely. The client could implement a timeout,
             #  it would save some time to know that things went badly
             if output:
+                logger.info("stdout: " + output.strip())
                 writer.write(output.encode())
                 await writer.drain()
             if err:
+                logger.info("stderr: " + err.strip())
                 writer.write(err.encode())
                 await writer.drain()
             if end_marker in output:

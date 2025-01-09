@@ -8,7 +8,7 @@ import pytest_asyncio
 import pytest
 
 from breba_docs.socket_server.async_client import AsyncClient
-from breba_docs.socket_server.client2 import Client2
+from breba_docs.socket_server.client import Client
 from breba_docs.socket_server.listener import start_server, stop_server
 
 
@@ -33,7 +33,7 @@ async def server():
 
 @pytest.fixture
 def client():
-    with Client2() as client:
+    with Client() as client:
         yield client
 
 @pytest_asyncio.fixture

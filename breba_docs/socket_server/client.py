@@ -34,21 +34,26 @@ class Client:
     def stream_response(self, timeout=2):
         """Read data from the server every 2 seconds until no more data is received."""
         self.client_socket.settimeout(timeout)  # Set a timeout for the socket
-
-        while True:
-            data = self.client_socket.recv(16384)
-            if data:
-                yield data.decode()
-            else:
-                # If no data is received, break the loop.
-                break
+        try:
+            while True:
+                data = self.client_socket.recv(16384)
+                if data:
+                    yield data.decode()
+                else:
+                    # If no data is received, break the loop.
+                    break
+        except socket.timeout:
+            return ""
 
     def send_message(self, message):
         """Send a message to the server."""
         if self.client_socket:
             try:
                 print(f"Sending: {message}")
-                self.client_socket.sendall(message.encode())
+                payload = message.encode()
+                header = len(payload).to_bytes(4)
+                print(f"Message with Header: {header + payload}")
+                self.client_socket.sendall(header + payload)
                 return True
             except socket.error as e:
                 print(f"Error sending message: {e}")

@@ -98,7 +98,6 @@ async def test_async_echo_variable(server, aclient):
     data = ""
     async for chunk in aclient.stream_response(timeout=0.1):
         data += chunk
-        # await asyncio.sleep(0.1) # server is running in parallel so we need to wait for it
 
     # We collected all the output from the two commands
     assert data == '$ export MY=Hello\nCompleted test1\n$ echo $MY\nHello\nCompleted test2\n'

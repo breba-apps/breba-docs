@@ -15,7 +15,7 @@ def openai_agent():
 
 @pytest.fixture
 def agent(openai_agent):
-    with ContainerCommandExecutor.executor_and_new_container(openai_agent) as command_executor:
+    with ContainerCommandExecutor.executor_and_new_container(openai_agent, dev=True) as command_executor:
         with command_executor.session() as session:
             yield CommandAgent(session)
 

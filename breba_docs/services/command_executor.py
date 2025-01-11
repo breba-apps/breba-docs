@@ -96,15 +96,16 @@ class LocalCommandExecutor(CommandExecutor):
 
 class ContainerCommandExecutor(CommandExecutor):
     def __init__(self, agent: Agent, socket_client: Client = None):
+        # TODO: get ride of agent
         self.agent = agent
         self.socket_client = socket_client
 
     @classmethod
     @contextlib.contextmanager
-    def executor_and_new_container(cls, agent: Agent):
+    def executor_and_new_container(cls, agent: Agent, **kwargs):
         execution_container = None
         try:
-            execution_container = container_setup(agent)
+            execution_container = container_setup(**kwargs)
             time.sleep(0.5)
             yield ContainerCommandExecutor(agent)
         finally:

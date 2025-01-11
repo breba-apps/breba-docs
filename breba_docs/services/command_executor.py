@@ -158,17 +158,17 @@ class ContainerCommandExecutor(CommandExecutor):
                     data_received.append(data)
                     if f"Completed {command_id}" in data:
                         data_received[-1] = data_received[-1].replace(f"Completed {command_id}", "")
-                        break
+                        return ''.join(data_received)
                     retries = 0  # Every time we have successful read, we want to reset retries
 
-                return ''.join(data_received)
-            except socket.timeout:
-                # We hit a timeout, decide if we should retry
-                retries += 1
-                print(f"Socket Client: No new Data received in {timeout} seconds (attempt {retries}/{max_retries})")
+                # We hit a timeout or stream is exhausted
+                print(f"No new Data received in {timeout} seconds (attempt {retries}/{max_retries})")
                 if should_restart_retries(data_received):
-                    print(f"Socket Client: Restarting retries")
+                    print(f"Restarting retries")
                     retries = 0
+                else:
+                    retries += 1
+
                 if retries >= max_retries:
                     print("Max retries reached.")
                     return ''.join(data_received)

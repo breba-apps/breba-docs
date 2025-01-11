@@ -30,8 +30,8 @@ def test_container_command_executor_no_input(mocker, session):
 
 @pytest.mark.integration
 def test_container_command_executor_with_input(mocker, session):
-    commands = [("""read -p "Please enter today's date (YYYY-MM-DD): " user_date""", """$ read -p "Please enter today's date (YYYY-MM-DD): " user_date"""),
-                ("echo Hello there $user_date", "Hello there ")]
+    commands = [("""read -p "Please enter October 5, 2023 in this format (YYYY-MM-DD): " user_date""", """$ read -p "Please enter October 5, 2023 in this format (YYYY-MM-DD): " user_date"""),
+                ("echo Hello there $user_date", "$ echo Hello there $user_date\nHello there 2023-10-05")]
     for command, expected_output in commands:
         output = session.execute_command(command)
         if expected_output:

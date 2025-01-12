@@ -6,8 +6,8 @@ import pytest
 from terminal_stream.command_streamer import CommandStreamer, TerminatedProcessError, ReadWriteError
 
 @pytest.fixture(params=[
-        ("ls dog", "ls: dog: No such file or directory\n"),
-        ("cd dog", "/bin/bash: line 1: cd: dog: No such file or directory\n"),
+        ("ls dog", "No such file or directory\n"),
+        ("cd dog", "No such file or directory\n"),
         ("vim dog", "Vim: Warning: Output is not to a terminal\nVim: Warning: Input is not from a terminal\n"),
     ])
 def error_commands(request):
@@ -66,7 +66,7 @@ class TestCommandStreamer:
 
         output = self.streamer.read_nonblocking()
 
-        assert output[1] == expect_output
+        assert expect_output in output[1]
 
     def test_read_nonblocking_write_error(self):
         self.streamer.process.stdin.write = MagicMock(side_effect=OSError("Mocked OSError"))

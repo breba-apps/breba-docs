@@ -1,30 +1,25 @@
 import asyncio
 import json
 from asyncio import StreamReader, StreamWriter
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest_asyncio
 
 import pytest
 
+from breba_docs.socket_server.async_client import AsyncClient
+from breba_docs.socket_server.client import Client
 from breba_docs.socket_server.listener import start_server, stop_server
 
 
 @pytest_asyncio.fixture
-async def server_connection(request) -> (MagicMock, StreamReader, StreamWriter):
-    with patch("breba_docs.socket_server.listener.command_end_marker", return_value=request.param[-1]):
-        mock = MagicMock()
-        mock.read_nonblocking.side_effect = request.param
-        mock.sendline = MagicMock()
-        mock.close = MagicMock()
-        with patch("breba_docs.socket_server.listener.pexpect.spawn", return_value=mock):
-            reader, writer = await asyncio.open_connection("127.0.0.1", 44440)
-            try:
-                yield mock, reader, writer
-            finally:
-                writer.close()
-                await writer.wait_closed()
-
+async def real_server_connection(mocker) -> (MagicMock, StreamReader, StreamWriter):
+    reader, writer = await asyncio.open_connection("127.0.0.1", 44440)
+    try:
+        yield reader, writer
+    finally:
+        writer.close()
+        await writer.wait_closed()
 
 
 @pytest_asyncio.fixture
@@ -36,25 +31,73 @@ async def server():
     async_server.cancel()
 
 
-command_outputs = ["Hello", "Completed test"]
+@pytest.fixture
+def client():
+    with Client() as client:
+        yield client
+
+@pytest_asyncio.fixture
+async def aclient():
+    async with AsyncClient() as aclient:
+        yield aclient
+
 @pytest.mark.asyncio
-@pytest.mark.parametrize("server_connection, expected_outputs", [(command_outputs, command_outputs)], indirect=["server_connection"])
 @pytest.mark.integration
-async def test_echo_command(server, server_connection, expected_outputs):
-    mock_process, reader, writer = server_connection
-    writer.write(json.dumps({"command": "echo Hello", "command_id": "test"}).encode())
-    await writer.drain()
+async def test_echo_command(server, client):
+    payload = json.dumps({"command": "echo Hello", "command_id": "test"})
+    client.send_message(payload)
+    await asyncio.sleep(0.1)  # server is running in parallel so we need to wait for it
 
-    data = b""
-    while True:
-        try:
-            data += await asyncio.wait_for(reader.read(1024), 0.5)
-        except asyncio.TimeoutError:
-            break
+    data = ""
+    for chunk in client.stream_response(timeout=0.1):
+        data += chunk
+        await asyncio.sleep(0.1)  # server is running in parallel, it will not produce new output without async sleep
 
-    for output in expected_outputs:
-        assert output in data.decode()
+    assert data == '$ echo Hello\nHello\nCompleted test\n'
 
-    mock_process.sendline.assert_called_with("echo Hello && echo Completed test")
-    # Test prompt being echoed
-    mock_process.sendline.assert_any_call("echo $ 'echo Hello'\n")
+@pytest.mark.asyncio
+@pytest.mark.integration
+async def test_async_echo_command(server, aclient):
+    payload = json.dumps({"command": "echo Hello", "command_id": "test"})
+    await aclient.send_message(payload)
+
+    data = ""
+    async for chunk in aclient.stream_response(timeout=0.1):
+        data += chunk
+
+    assert data == '$ echo Hello\nHello\nCompleted test\n'
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+async def test_echo_variable(server, client):
+    payload = json.dumps({"command": "export MY=Hello", "command_id": "test1"})
+    client.send_message(payload)
+
+    payload = json.dumps({"command": "echo $MY", "command_id": "test2"})
+    client.send_message(payload)
+
+    await asyncio.sleep(0.1)  # server is running in parallel so we need to wait for it
+
+    data = ""
+    for chunk in client.stream_response(timeout=0.1):
+        data += chunk
+        await asyncio.sleep(0.1)
+
+    # We collected all the output from the two commands
+    assert data == '$ export MY=Hello\nCompleted test1\n$ echo $MY\nHello\nCompleted test2\n'
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+async def test_async_echo_variable(server, aclient):
+    payload = json.dumps({"command": "export MY=Hello", "command_id": "test1"})
+    await aclient.send_message(payload)
+
+    payload = json.dumps({"command": "echo $MY", "command_id": "test2"})
+    await aclient.send_message(payload)
+
+    data = ""
+    async for chunk in aclient.stream_response(timeout=0.1):
+        data += chunk
+
+    # We collected all the output from the two commands
+    assert data == '$ export MY=Hello\nCompleted test1\n$ echo $MY\nHello\nCompleted test2\n'

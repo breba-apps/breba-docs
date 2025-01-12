@@ -8,7 +8,7 @@ from terminal_stream.command_streamer import CommandStreamer, TerminatedProcessE
 @pytest.fixture(params=[
         ("ls dog", "No such file or directory\n"),
         ("cd dog", "No such file or directory\n"),
-        ("vim dog", "Vim: Warning: Output is not to a terminal\nVim: Warning: Input is not from a terminal\n"),
+        ("nocommand1", "command not found"),
     ])
 def error_commands(request):
     yield request.param
@@ -64,7 +64,7 @@ class TestCommandStreamer:
         command, expect_output =error_commands
         self.streamer.send_command(command)
 
-        output = self.streamer.read_nonblocking()
+        output = self.streamer.read_nonblocking(0.2)
 
         assert expect_output in output[1]
 

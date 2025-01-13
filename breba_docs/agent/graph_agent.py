@@ -34,8 +34,6 @@ class GraphAgent:
 
         self.system_instructions = None
         graph = StateGraph(AgentState)
-        # TODO: can use ReAct agents for some of the looping
-        # TODO: can update state without **state
         graph.add_node("identify_goals", self.identify_goals)
         graph.add_node("start_next_goal", self.start_next_goal)
         graph.add_node("identify_commands", self.identify_commands)
@@ -66,6 +64,7 @@ class GraphAgent:
         return self.graph.invoke({"messages": [], "goals": [], "goal_reports": []})
 
     def should_reevaluate_goal(self, state: AgentState):
+        # TODO: log every step of the graph
         # By convention, we are always working on the last goal report
         current_goal_report: GoalReport = state['goal_reports'][-1]
         if state['goal_evaluation_count'] >= 4:

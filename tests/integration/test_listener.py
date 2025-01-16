@@ -1,5 +1,6 @@
 import asyncio
 import json
+import re
 from asyncio import StreamReader, StreamWriter
 from unittest.mock import MagicMock
 
@@ -8,7 +9,7 @@ import pytest_asyncio
 import pytest
 
 from breba_docs.socket_server.async_client import AsyncClient
-from breba_docs.socket_server.client import Client
+from breba_docs.socket_server.client import Client, EndOfStream
 from breba_docs.socket_server.listener import start_server, stop_server
 
 
@@ -101,3 +102,32 @@ async def test_async_echo_variable(server, aclient):
 
     # We collected all the output from the two commands
     assert data == '$ export MY=Hello\nCompleted test1\n$ echo $MY\nHello\nCompleted test2\n'
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+async def test_send_command_with_variable(server, client):
+    client.send_command("export MY=Hello")
+    response_accumulator =client.send_command("echo $MY")
+
+    await asyncio.sleep(0.1)  # server is running in parallel so we need to wait for it
+
+    data = response_accumulator(0.1)
+    # We collected all the output from the two commands
+    expected_pattern = r"\$ export MY=Hello\nCompleted .*\n\$ echo \$MY\nHello\n\n"  #TODO: the Completed shows up because we have two commands processed before reading response
+    assert re.match(expected_pattern, data)
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+async def test_send_command_with_timeout_handler(server, client):
+    def timeout_handler(error):
+        assert isinstance(error, TimeoutError)
+        raise EndOfStream("timeout")  # raise error otherwise we get infinite loop
+
+    expected_pattern = "$ read -p 'Press enter to continue'\n"
+    response_accumulator = client.send_command("read -p 'Press enter to continue'")
+    await asyncio.sleep(0.1)  # server is running in parallel so we need to wait for it
+
+    data = response_accumulator(0.01, timeout_handler)
+    # We collected all the output from the two commands
+    assert data == expected_pattern

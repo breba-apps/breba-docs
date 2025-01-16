@@ -38,11 +38,18 @@ class Client:
             self.client_socket = None
 
     def accumulate_response(self, message_id):
+        def on_timout(error):
+            raise EndOfStream("Streaming ended due to socket timeout") from error
+
+        def on_socket_closed():
+            raise SocketClosedError("Streaming ended due to socket closed")
+
         # This is trying to tie message_id to
-        def stream_functional(timeout):
+        def stream_functional(timeout, on_timout, on_socket_closed):
             self.client_socket.settimeout(timeout)  # Set a timeout for the socket
-            try:
-                while True:
+
+            while True:
+                try:
                     data = self.client_socket.recv(16384).decode()
                     if f"Completed {message_id}" in data:
                         yield data.replace(f"Completed {message_id}", "")  # Remove the command end marker and keep the rest of the data
@@ -50,16 +57,17 @@ class Client:
                     if data:
                         yield data
                     else:
-                        raise SocketClosedError("Streaming ended due to no data received, likely socket is closed")
-            except socket.timeout as e:
-                raise EndOfStream("Streaming ended due to socket timeout") from e
+                        on_socket_closed()
+                except socket.timeout as e:
+                    on_timout(e)
 
-        def accumulate_output(timeout=2.0):
+        def accumulate_output(timeout=2.0, on_timeout=on_timout, on_socket_closed=on_socket_closed):
             data = ""
             try:
-                for chunk in stream_functional(timeout):
+                for chunk in stream_functional(timeout, on_timeout, on_socket_closed):
                     data += chunk
             except (EndOfStream, SocketClosedError):
+                # ON TIMEOUT we want to have the accumulated data returned... Then we can implement the read_response function
                 print("End of stream reached. Will return accumulated data.")
             return data
 
@@ -96,7 +104,7 @@ class Client:
             print("No connection to server. Cannot send message.")
             raise Exception("No connection to server. Cannot send message.")
 
-    def send_command(self, command: str) -> Callable[[float], str | None] | None:
+    def send_command(self, command: str) -> Callable[[float, Callable | None, Callable | None], str | None] | None:
         command_id = str(uuid.uuid4())
         command_directive = {"command": command, "command_id": command_id}
         if self.send_message(json.dumps(command_directive)):

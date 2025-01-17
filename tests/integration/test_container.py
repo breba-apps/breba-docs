@@ -27,11 +27,13 @@ def container():
 @pytest.mark.integration
 def test_execute_command(container):
     with Client(("127.0.0.1", PORT)) as  client:
-        response_fn = client.send_command('pip uninstall pexpect')
-        response = response_fn(0.5)
+        response_install_fn = client.send_command('pip install pexpect')
+        response_install = response_install_fn(0.2)
+        response_install = client.send_command('pip uninstall pexpect')
+        response = response_install(0.2)
         command = {"input": 'Y'}
         client.send_message(json.dumps(command))
-        response = ''.join([response, response_fn(2)])  # This will exit as soon as command completes
+        response = ''.join([response, response_install(2)])  # This will exit as soon as command completes
 
     assert "Proceed (Y/n)" in response
     assert "Successfully uninstalled" in response

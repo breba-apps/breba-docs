@@ -323,6 +323,17 @@ files = [
 ]
 
 [[package]]
+name = "interactive-process"
+version = "0.1.0"
+description = ""
+optional = false
+python-versions = "<4.0,>=3.10"
+files = [
+    {file = "interactive_process-0.1.0-py3-none-any.whl", hash = "sha256:e20b2e35ec2511c9c90051e9fb8742e1852ed58e3d7d2bd7cb2c680d68397097"},
+    {file = "interactive_process-0.1.0.tar.gz", hash = "sha256:6056f71eb61cc00ac337badcf22bbdf2dc01d07f2f3c4d111366fc9ff351c020"},
+]
+
+[[package]]
 name = "jinja2"
 version = "3.1.4"
 description = "A very fast and expressive template engine."
@@ -1406,4 +1417,4 @@ zstd = ["zstandard (>=0.18.0)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "bc41386968e4a9a982e4da501d35751754aaeaa65ad5890b14175b71a774a7b9"
+content-hash = "06aacfabdda8575ff24533d4402498c6cef45c8352ec0540cfaad3362549d27c"

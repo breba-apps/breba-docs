@@ -7,7 +7,7 @@ WORKDIR /usr/src
 # Install pexpect and clone the repository
 RUN python -m venv .venv \
     && . .venv/bin/activate \
-    && pip install pexpect \
+    && pip install interactive-process \
     && git clone https://github.com/breba-apps/breba-docs.git
 
 # Add breba-docs to the Python path

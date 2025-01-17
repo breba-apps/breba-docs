@@ -4,7 +4,7 @@ import shlex
 import logging
 from asyncio import StreamReader, StreamWriter
 
-from terminal_stream.command_streamer import CommandStreamer, TerminatedProcessError, ReadWriteError
+from interactive_process import InteractiveProcess, TerminatedProcessError, ReadWriteError
 
 PORT = 44440
 server: asyncio.Server | None = None
@@ -12,7 +12,7 @@ server: asyncio.Server | None = None
 logger = logging.getLogger(__name__)
 
 
-async def stream_output(process: CommandStreamer, writer: StreamWriter, end_marker: str):
+async def stream_output(process: InteractiveProcess, writer: StreamWriter, end_marker: str):
     while True:
         try:
             output, err = process.read_nonblocking(timeout=1)
@@ -90,7 +90,7 @@ async def handle_client(reader: StreamReader, writer: StreamWriter):
     client_address = writer.get_extra_info('peername')
     logger.info(f"Connection from {client_address}")
 
-    process = CommandStreamer()
+    process = InteractiveProcess()
     process.send_command('. .venv/bin/activate')
 
     commands_queue = asyncio.Queue()

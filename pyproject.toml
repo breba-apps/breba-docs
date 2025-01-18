@@ -32,7 +32,7 @@ langchain-core = "^0.3.21"
 langchain-openai = "^0.2.10"
 langgraph = "^0.2.53"
 pytest-asyncio = "^0.25.0"
-interactive-process = "^0.1.0"
+interactive-process = "^0.2.0"
 
 
 [tool.poetry.group.test.dependencies]

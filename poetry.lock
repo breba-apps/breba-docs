@@ -324,14 +324,17 @@ files = [
 
 [[package]]
 name = "interactive-process"
-version = "0.1.0"
+version = "0.2.1"
 description = ""
 optional = false
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "interactive_process-0.1.0-py3-none-any.whl", hash = "sha256:e20b2e35ec2511c9c90051e9fb8742e1852ed58e3d7d2bd7cb2c680d68397097"},
-    {file = "interactive_process-0.1.0.tar.gz", hash = "sha256:6056f71eb61cc00ac337badcf22bbdf2dc01d07f2f3c4d111366fc9ff351c020"},
+    {file = "interactive_process-0.2.1-py3-none-any.whl", hash = "sha256:d887b57e9fa28b16fbcfd115641447da5058ce63377d371cd152fe45e1e97ca3"},
+    {file = "interactive_process-0.2.1.tar.gz", hash = "sha256:77270df6f5cddff54464f6702bcbf9156b875b776b3a599639236ac6ffc9993c"},
 ]
+
+[package.dependencies]
+ptyprocess = ">=0.7.0,<0.8.0"
 
 [[package]]
 name = "jinja2"
@@ -1417,4 +1420,4 @@ zstd = ["zstandard (>=0.18.0)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "06aacfabdda8575ff24533d4402498c6cef45c8352ec0540cfaad3362549d27c"
+content-hash = "62d8d0190826b166a797401bd5d34146d14d64e4f040b4451db1e87befcd75e1"

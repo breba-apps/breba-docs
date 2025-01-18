@@ -15,22 +15,16 @@ logger = logging.getLogger(__name__)
 async def stream_output(process: InteractiveProcess, writer: StreamWriter, end_marker: str):
     while True:
         try:
-            output, err = process.read_nonblocking(timeout=1)
-            # TODO: handle unexpected exceptions gracefully. Currently client doesn't receive anything in case of
-            #  unexpected error and may be stuck waiting for response indefinitely. The client could implement a timeout,
-            #  it would save some time to know that things went badly
+            output = process.read_nonblocking(timeout=1)
             if output:
-                logger.info("stdout: " + output.strip())
+                logger.info("Process output: " + output.strip())
                 writer.write(output.encode())
-                await writer.drain()
-            if err:
-                logger.info("stderr: " + err.strip())
-                writer.write(err.encode())
                 await writer.drain()
             if end_marker in output:
                 logger.info("Breaking on end marker")
                 break
         except TimeoutError:
+            # TODO: this will be an infinite loop if end_marker is not found due to an error in the command, should use max_timeout, or use an http client
             await asyncio.sleep(0.1)  # TODO: maybe add max sleep time.
         except (TerminatedProcessError, ReadWriteError) as e:
             logger.info("End of process output.")

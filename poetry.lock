@@ -324,13 +324,13 @@ files = [
 
 [[package]]
 name = "interactive-process"
-version = "0.2.1"
+version = "0.2.3"
 description = ""
 optional = false
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "interactive_process-0.2.1-py3-none-any.whl", hash = "sha256:d887b57e9fa28b16fbcfd115641447da5058ce63377d371cd152fe45e1e97ca3"},
-    {file = "interactive_process-0.2.1.tar.gz", hash = "sha256:77270df6f5cddff54464f6702bcbf9156b875b776b3a599639236ac6ffc9993c"},
+    {file = "interactive_process-0.2.3-py3-none-any.whl", hash = "sha256:65c9b67709e3f89419404da768529476f956ffeb11a74820f3d4331f919c95b6"},
+    {file = "interactive_process-0.2.3.tar.gz", hash = "sha256:6640836dff2ead6c6740915cac6bf4dce8ea7625112e16ab0d812c4a15628108"},
 ]
 
 [package.dependencies]

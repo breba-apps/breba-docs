@@ -26,7 +26,7 @@ async def server():
 async def client():
     with Client() as client:
         await asyncio.sleep(0.1)  # server is running in parallel, it will not produce new output without async sleep
-        response_fn = client.send_command('clear')
+        response_fn = client.send_command('echo flush')
         await asyncio.sleep(0.1)  # server is running in parallel, it will not produce new output without async sleep
         flushed = response_fn(0.1)
         yield client

@@ -1,4 +1,4 @@
-# Breba Docs
+# Breba Docs &middot; [![PyPI version](https://img.shields.io/pypi/v/breba-docs.svg)](https://pypi.org/project/breba-docs/)
 
 _AI documentation validator_ 
 

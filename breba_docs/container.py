@@ -3,6 +3,7 @@ import threading
 import time
 from io import BytesIO
 import tarfile
+from pathlib import Path
 
 import docker
 from docker.models.containers import Container
@@ -42,13 +43,25 @@ def container_setup(debug=False, dev=False) -> Container:
     client = docker.from_env()
     breba_image = os.environ.get("BREBA_IMAGE", "breba-image")
     print(f"Setting up the container with image: {breba_image}")
-    volumes = {}
+    kwargs = {}
     if dev:
-        # This will run listener code from local machine overriding the breba-docs directory on the container
-        cwd = os.getcwd()
-        volumes = {
-            cwd: {'bind': '/usr/src/breba-docs', 'mode': 'rw'},
+        # We will run pty-server from the local .venv folder which needs to resolve to a local path with develop option
+        # For example in pyproject.toml: pty-server = { path = "../pty-server", develop = true }
+        local_venv = Path(os.getcwd()) / Path("../pty-server")
+        kwargs['volumes'] = {
+            local_venv: {'bind': '/usr/src/pty-server', 'mode': 'rw'},
         }
+        kwargs['command'] = [
+            "bash",
+            "-c",
+            """
+            export VIRTUAL_ENV_DISABLE_PROMPT=1 && \
+            source .venv/bin/activate && \
+            pip install ./pty-server/
+            pty-server
+            """
+        ]
+
     container = client.containers.run(
         breba_image,
         stdin_open=True,
@@ -56,8 +69,18 @@ def container_setup(debug=False, dev=False) -> Container:
         detach=True,
         working_dir="/usr/src",
         ports={f'{PORT}/tcp': PORT},
-        volumes=volumes
+        **kwargs
     )
+
+    # Block until the container is running, or exited
+    while container.status == 'created':
+        time.sleep(0.1)
+        container.reload()
+
+    if container.status != 'running':
+        print(f"Container status: {container.status}")
+        print(container.logs().decode('utf-8'))
+        raise Exception("Container failed to start")
 
     if debug:
         start_logs_thread(container)  # no need to join because it should just run to the end of the process

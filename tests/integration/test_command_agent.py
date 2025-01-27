@@ -44,6 +44,7 @@ def test_typo_command_without_fix(agent):
 
 @pytest.mark.integration
 def test_command_with_missing_setup(agent):
+    # TODO: This test fails sometimes because there are multiple correct "improved commands"
     command = 'cd my_project'
     messages = agent.invoke(command)["messages"]
     command_report = CommandReport.from_string(messages[-1].content)

@@ -6,6 +6,7 @@ import os
 import shlex
 import time
 import uuid
+from collections.abc import Coroutine
 
 import pexpect
 from tenacity import retry, stop_after_delay, wait_fixed
@@ -97,10 +98,20 @@ class LocalCommandExecutor(CommandExecutor):
 
 
 class ContainerCommandExecutor(CommandExecutor):
-    def __init__(self, agent: Agent, socket_client: AsyncPtyClient = None):
-        # TODO: get ride of agent
+    def __init__(self, agent, socket_client=None):
         self.agent = agent
         self.socket_client = socket_client
+        # Used for async bridging
+        self.loop = asyncio.new_event_loop()
+
+    def _run_in_own_loop(self, fut: asyncio.Future | Coroutine):
+        """
+        Ensure that this executor's dedicated loop is set as the current loop
+        in the current thread. This is crucial if the code ends up running
+        in a different thread than where it was created.
+        """
+        asyncio.set_event_loop(self.loop)
+        return self.loop.run_until_complete(fut)
 
     @classmethod
     @contextlib.contextmanager
@@ -183,8 +194,8 @@ class ContainerCommandExecutor(CommandExecutor):
             with self.session() as session:
                 return session.execute_command(command)
         else:
-            loop = asyncio.get_event_loop()
-            return loop.run_until_complete(self.do_execute(command))
+
+            return self._run_in_own_loop(self.do_execute(command))
 
     async def execute_command_async(self, command: str) -> str:
         # If not yet part of a session, execute command in using session
@@ -223,12 +234,11 @@ class ContainerCommandExecutor(CommandExecutor):
 
     @contextlib.contextmanager
     def session(self):
-        loop = asyncio.get_event_loop()
-        self.socket_client = loop.run_until_complete(self.try_connect())
+        self.socket_client = self._run_in_own_loop(self.try_connect())
         try:
             yield self
         finally:
-            loop.run_until_complete(self.socket_client.disconnect())
+            self._run_in_own_loop(self.socket_client.disconnect())
             self.socket_client = None
 
     @contextlib.asynccontextmanager

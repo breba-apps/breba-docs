@@ -1,7 +1,3 @@
-import asyncio
-
-import pytest_asyncio
-
 import pytest
 from dotenv import load_dotenv
 

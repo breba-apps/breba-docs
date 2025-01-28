@@ -8,6 +8,7 @@ from pathlib import Path
 import docker
 from docker.models.containers import Container
 
+from breba_docs import config
 from breba_docs.socket_server.listener import PORT
 
 
@@ -40,6 +41,8 @@ def start_logs_thread(container):
 
 
 def container_setup(debug=False, dev=False) -> Container:
+    debug = debug or config.debug_server
+
     client = docker.from_env()
     breba_image = os.environ.get("BREBA_IMAGE", "breba-image")
     print(f"Setting up the container with image: {breba_image}")

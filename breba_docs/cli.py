@@ -91,19 +91,19 @@ def run_analyzer(document: Document):
 
 
 
-def start_cli(args):
-    config.initialize(args)
+def start_cli(project_path: str):
     load_dotenv()
     # TODO: currently get_document implicitly depends on setup_project
     #  But we should have a project class that can persist document
-    setup_project(args.project)
+    setup_project(project_path)
     document = get_document()
     run_analyzer(document)
 
 
 def run():
     args = parse_arguments()
-    start_cli(args)
+    config.initialize(args)
+    start_cli(config.project_path)
 
 
 if __name__ == "__main__":

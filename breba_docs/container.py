@@ -9,7 +9,6 @@ import docker
 from docker.models.containers import Container
 
 from breba_docs import config
-from breba_docs.socket_server.listener import PORT
 
 
 def get_container_logs(container):
@@ -65,13 +64,15 @@ def container_setup(debug=False, dev=False) -> Container:
             """
         ]
 
+    # TODO: make the port configurable
+    port = 44440
     container = client.containers.run(
         breba_image,
         stdin_open=True,
         tty=True,
         detach=True,
         working_dir="/usr/src",
-        ports={f'{PORT}/tcp': PORT},
+        ports={f'{port}/tcp': port},
         **kwargs
     )
 

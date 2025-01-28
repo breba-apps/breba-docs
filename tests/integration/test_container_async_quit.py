@@ -9,7 +9,7 @@ from pty_server import AsyncPtyClient
 def container():
     # To Run the container from terminal from breba_docs package dir
     # docker run -d -it \
-    #   -v $(pwd)/breba_docs/socket_server:/usr/src/socket_server \
+    #   -v $(pwd)../pty-server:/usr/src/pty-server \
     #   -w /usr/src \
     #   -p 44440:44440 \
     #   python:3 \

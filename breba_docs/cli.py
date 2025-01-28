@@ -11,7 +11,6 @@ from git import Repo
 from breba_docs import config
 from breba_docs.analyzer.document_analyzer import create_document_report
 from breba_docs.analyzer.reporter import Reporter
-from breba_docs.container import container_setup
 from breba_docs.services.document import Document
 
 

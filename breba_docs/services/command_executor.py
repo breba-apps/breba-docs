@@ -205,6 +205,7 @@ class ContainerCommandExecutor(CommandExecutor):
         else:
             return await self.do_execute(command)
 
+    # TODO: Get rid of this code, it is not being used anywhere
     def execute_commands_sync(self, commands) -> list[CommandReport]:
         command_reports = []
         execution_container = None

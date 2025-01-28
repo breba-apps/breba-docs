@@ -39,7 +39,7 @@ class CommandAgent:
             ("system", instructions),
             ("user", command),
         ]}
-        result = self.graph.invoke(inputs)
+        result = self.graph.invoke(inputs, {"recursion_limit": 100})
         return result
 
 

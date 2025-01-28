@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "breba-docs"
-version = "0.1.7"
+version = "0.2.0"
 description = "Documentation assistant will proof read your docs"
 authors = ["Yason Khaburzaniya <yason@hey.com>"]
 license = "MIT"
@@ -54,6 +54,7 @@ markers = [
 ]
 # log_cli = "True"
 # log_cli_level = "INFO"
+
 
 
 

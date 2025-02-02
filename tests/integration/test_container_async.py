@@ -1,5 +1,4 @@
 import json
-import time
 
 import pytest
 
@@ -19,7 +18,6 @@ def container():
     #   python:3 \
     #   /bin/bash
     started_container = container_setup(dev=True)
-    time.sleep(2)
     yield started_container
     started_container.stop()
     started_container.remove()

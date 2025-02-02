@@ -945,13 +945,13 @@ testing = ["pytest", "pytest-benchmark"]
 
 [[package]]
 name = "pty-server"
-version = "0.1.8"
+version = "0.1.9"
 description = ""
 optional = false
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "pty_server-0.1.8-py3-none-any.whl", hash = "sha256:b24f65560342b7c422c4963ec4fc5d0a23182424b44560c02079881995d62a4b"},
-    {file = "pty_server-0.1.8.tar.gz", hash = "sha256:81a338b16c762786430d6c8a8fc49df4a7742010ed1b0d151178c1b0bc9486e3"},
+    {file = "pty_server-0.1.9-py3-none-any.whl", hash = "sha256:4859431a1e1e0e415d185d8ccba3547f7445ed4d2ba53ac87d6cfdd3f75fe9d6"},
+    {file = "pty_server-0.1.9.tar.gz", hash = "sha256:df76aaff38a23291d7239e0efae1755639e27305cb48ece116beacb5f129f432"},
 ]
 
 [package.dependencies]
@@ -1777,4 +1777,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "ed88f5d6510cf57e9ae717abada48c73af86bc8d078f374cf2c68efe7a9a29cb"
+content-hash = "ea7c003921d7900ebba1476f73a26b5dfda5ab36125212a9abe4b97781b8cc7b"

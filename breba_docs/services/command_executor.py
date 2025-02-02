@@ -227,15 +227,10 @@ class ContainerCommandExecutor(CommandExecutor):
                 execution_container.stop()
                 execution_container.remove()
 
-    @retry(stop=stop_after_delay(15), wait=wait_fixed(0.2))
-    async def try_connect(self):
-        client = AsyncPtyClient()
-        await client.connect()  # if this raises, it will retry
-        return client
-
     @contextlib.contextmanager
     def session(self):
-        self.socket_client = self._run_in_own_loop(self.try_connect())
+        self.socket_client = AsyncPtyClient()
+        self._run_in_own_loop(self.socket_client.connect(max_wait_time=15))
         try:
             yield self
         finally:
@@ -245,7 +240,8 @@ class ContainerCommandExecutor(CommandExecutor):
     @contextlib.asynccontextmanager
     async def async_session(self) -> CommandExecutor:
         """Using the with executor.session will run all commands in the same session"""
-        self.socket_client = await self.try_connect()
+        self.socket_client = AsyncPtyClient()
+        await self.socket_client.connect(max_wait_time=15)
         yield self
         await self.socket_client.disconnect()
         self.socket_client = None

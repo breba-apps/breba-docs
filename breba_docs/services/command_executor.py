@@ -9,7 +9,6 @@ import uuid
 from collections.abc import Coroutine
 
 import pexpect
-from tenacity import retry, stop_after_delay, wait_fixed
 
 from breba_docs.agent.agent import Agent
 from breba_docs.container import container_setup

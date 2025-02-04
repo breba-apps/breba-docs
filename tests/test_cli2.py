@@ -87,8 +87,8 @@ def test_run_command(temp_project):
     command = RunCommand()
     tester = CommandTester(command)
 
-    # Execute the command without additional arguments.
-    exit_code = tester.execute(args="TestProject", interactive=False)
+    # Testing with default path parameter, which will test in current directory
+    exit_code = tester.execute(interactive=False)
     assert exit_code == 0
 
     # Retrieve the output from the command.

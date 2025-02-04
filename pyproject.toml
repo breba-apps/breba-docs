@@ -34,6 +34,7 @@ langgraph = "^0.2.53"
 pytest-asyncio = "^0.25.0"
 interactive-process = "^0.2.0"
 pty-server = "^0.1.10"
+cleo = "^2.1.0"
 
 
 [tool.poetry.group.test.dependencies]
@@ -69,3 +70,4 @@ build-backend = "poetry.core.masonry.api"
 [tool.poetry.scripts]
 breba_docs = "breba_docs.cli:run"
 breba-docs = "breba_docs.cli:run"
+breba-docs2 = "breba_docs.cli2.app:run"

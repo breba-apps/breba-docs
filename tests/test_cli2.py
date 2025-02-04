@@ -1,14 +1,15 @@
-import yaml
+import os
 from pathlib import Path
 
 import pytest
-
+import yaml
 from cleo.testers.command_tester import CommandTester
+
 from breba_docs.cli2.commands.new_command import NewCommand
 from breba_docs.cli2.commands.run_command import RunCommand
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def temp_project(tmp_path, monkeypatch):
     """
     Change the current working directory to a temporary directory.
@@ -16,30 +17,24 @@ def temp_project(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     return tmp_path
 
-
-def test_new_command_with_option(temp_project):
-    """
-    Test the 'new' command using the --name option and simulated interactive input for model configuration.
-    """
-    # Create an instance of NewCommand and wrap it with CommandTester.
-    command = NewCommand()
-    tester = CommandTester(command)
-
-    # Prepare simulated interactive input as a single string.
-    # The expected answers are:
-    # 1. Model type (default "openai")
-    # 2. Model name
-    # 3. API key
+@pytest.fixture
+def new_project_path(temp_project):
+    project_name = "TestProject"
     inputs = "openai\ngpt-4\ndummy_api_key\n"
 
-    project_name = "TestProject"
-    # Execute the command with the --name option.
-    # The command will pick up the provided inputs interactively.
-    exit_code = tester.execute(args=project_name, inputs=inputs, interactive=True)
-    assert exit_code == 0
+    new_command_tester = CommandTester(NewCommand())
+    exit_code = new_command_tester.execute(args=project_name, inputs=inputs, interactive=True)
+    assert exit_code == 0, "Failed to create config file"
+    return Path(temp_project) / project_name
 
+
+
+def test_new_command_with_option(new_project_path):
+    """
+    Test the 'new' command
+    """
     # Verify that the expected directories and config file were created.
-    project_root = Path(temp_project) / project_name
+    project_root = new_project_path
     data_dir = project_root / "data"
     prompts_dir = project_root / "prompts"
     config_file = project_root / "config.yaml"
@@ -63,25 +58,31 @@ def test_new_command_with_option(temp_project):
     assert model_details["temperature"] == 0.0
 
 
-def test_run_command(temp_project):
+def test_run_command(new_project_path):
     """
-    Test the 'run' command by creating a dummy config.yaml file and checking the output.
+    Test the 'run' command
     """
-    # Create a dummy configuration.
-    config = {
-        "project_name": "TestProject",
-        "models": {
-            "openai-gpt-4-1": {
-                "type": "openai",
-                "name": "gpt-4",
-                "api_key": "dummy_api_key",
-                "temperature": 0.0
-            }
-        }
-    }
-    config_file = temp_project / "config.yaml"
-    with config_file.open("w") as f:
-        yaml.dump(config, f)
+    # Create an instance of RunCommand and wrap it with CommandTester.
+    command = RunCommand()
+    tester = CommandTester(command)
+
+    # Testing with default path parameter, which will test in current directory
+    exit_code = tester.execute(args=str(new_project_path), interactive=False)
+    assert exit_code == 0
+
+    # Verify that the expected output was printed.
+    output = tester.io.fetch_output()
+    assert "Running the breba-docs project..." in output
+    assert "Project Name: TestProject" in output
+    assert "openai-gpt-4-1" in output
+    assert "dummy_api_key" in output
+
+
+def test_run_command_in_current_directory(new_project_path):
+    """
+    Test the 'run' command when in current directory
+    """
+    os.chdir(new_project_path)
 
     # Create an instance of RunCommand and wrap it with CommandTester.
     command = RunCommand()
@@ -91,10 +92,8 @@ def test_run_command(temp_project):
     exit_code = tester.execute(interactive=False)
     assert exit_code == 0
 
-    # Retrieve the output from the command.
+    # Verify that the expected output was printed.
     output = tester.io.fetch_output()
-
-    # Check that the output contains the expected information.
     assert "Running the breba-docs project..." in output
     assert "Project Name: TestProject" in output
     assert "openai-gpt-4-1" in output

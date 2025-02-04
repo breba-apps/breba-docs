@@ -42,7 +42,6 @@ class NewCommand(Command):
 
         try:
             os.makedirs(project_root, exist_ok=False)
-            os.chdir(project_root)
             self.create_project_structure(project_root)
 
             # Interactively ask for model configuration.

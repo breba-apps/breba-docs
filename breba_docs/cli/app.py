@@ -12,7 +12,7 @@ def setup_logging(debug=False):
     level = logging.DEBUG if debug else logging.INFO
     logging.basicConfig(
         level=level,
-        format='%(asctime)s - %(levelname)s - %(message)s',
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
 
         # We start out with a stdout handler, but later when project_root is know we will add a file handler
         handlers=[

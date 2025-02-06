@@ -20,13 +20,12 @@ def temp_project(tmp_path, monkeypatch):
 @pytest.fixture
 def new_project_path(temp_project):
     project_name = "TestProject"
-    inputs = "openai\ngpt-4\ndummy_api_key\n"
+    inputs = "openai\ngpt-4\ndummy_api_key\nbreba-image\n"
 
     new_command_tester = CommandTester(NewCommand())
     exit_code = new_command_tester.execute(args=project_name, inputs=inputs, interactive=True)
     assert exit_code == 0, "Failed to create config file"
     return Path(temp_project) / project_name
-
 
 
 def test_new_command_with_option(new_project_path):
@@ -48,6 +47,7 @@ def test_new_command_with_option(new_project_path):
         config = yaml.safe_load(f)
 
     assert config["project_name"] == "TestProject"
+    assert config["container_image"] == "breba-image"
     models = config["models"]
     model_id = "openai-gpt-4-1"
     assert model_id in models
@@ -58,10 +58,13 @@ def test_new_command_with_option(new_project_path):
     assert model_details["temperature"] == 0.0
 
 
-def test_run_command(new_project_path):
+def test_run_command(mocker, new_project_path):
     """
     Test the 'run' command
     """
+    mocker.patch("breba_docs.cli2.commands.run_command.get_document", return_value=None)
+    mocker.patch("breba_docs.cli2.commands.run_command.run_analyzer", return_value=None)
+
     # Create an instance of RunCommand and wrap it with CommandTester.
     command = RunCommand()
     tester = CommandTester(command)
@@ -74,14 +77,20 @@ def test_run_command(new_project_path):
     output = tester.io.fetch_output()
     assert "Running the breba-docs project..." in output
     assert "Project Name: TestProject" in output
+    assert "Container Image: breba-image" in output
     assert "openai-gpt-4-1" in output
     assert "dummy_api_key" in output
+    assert os.environ["OPENAI_API_KEY"] == "dummy_api_key"
+    assert os.environ["BREBA_IMAGE"] == "breba-image"
 
 
-def test_run_command_in_current_directory(new_project_path):
+def test_run_command_in_current_directory(mocker, new_project_path):
     """
     Test the 'run' command when in current directory
     """
+    mocker.patch("breba_docs.cli2.commands.run_command.get_document", return_value=None)
+    mocker.patch("breba_docs.cli2.commands.run_command.run_analyzer", return_value=None)
+
     os.chdir(new_project_path)
 
     # Create an instance of RunCommand and wrap it with CommandTester.

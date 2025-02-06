@@ -50,6 +50,7 @@ class NewCommand(Command):
             model_type = self.ask("Model type (available: openai):", default="openai")
             model_name = self.ask("Model name:")
             api_key = self.ask("API key:")
+            container_image = self.ask("Container image for executing commands:")
 
             # Generate a model_id using the combination of type, name, and a counter (starting at 1).
             model_id = f"{model_type}-{model_name}-1"
@@ -57,6 +58,7 @@ class NewCommand(Command):
             # Build the configuration data.
             config_data = {
                 "project_name": project_name,
+                "container_image": container_image,
                 "models": {
                     model_id: {
                         "type": model_type,

@@ -94,6 +94,8 @@ class RunCommand(Command):
         else:
             project_root = Path(os.getcwd())
 
+        os.chdir(project_root)
+
         config_path = project_root / "config.yaml"
 
         # Ensure we are in a valid breba-docs project directory

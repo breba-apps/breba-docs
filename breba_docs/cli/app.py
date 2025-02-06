@@ -2,9 +2,9 @@ import logging
 import sys
 
 from cleo.application import Application
-from breba_docs.cli2.commands.new_command import NewCommand
-from breba_docs.cli2.commands.run_command import RunCommand
-from breba_docs.cli2 import __version__
+from breba_docs.cli.commands.new_command import NewCommand
+from breba_docs.cli.commands.run_command import RunCommand
+from breba_docs.cli import __version__
 
 
 # Configure logging
@@ -32,7 +32,7 @@ def run():
     try:
         app.run()
     except Exception as e:
-        logging.exception("An unexpected error occurred:")
+        logging.exception(f"An unexpected error occurred: {e}")
         sys.exit(1)
 
 

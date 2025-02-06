@@ -5,8 +5,8 @@ import pytest
 import yaml
 from cleo.testers.command_tester import CommandTester
 
-from breba_docs.cli2.commands.new_command import NewCommand
-from breba_docs.cli2.commands.run_command import RunCommand
+from breba_docs.cli.commands.new_command import NewCommand
+from breba_docs.cli.commands.run_command import RunCommand
 
 
 @pytest.fixture(autouse=True)
@@ -62,8 +62,8 @@ def test_run_command(mocker, new_project_path):
     """
     Test the 'run' command
     """
-    mocker.patch("breba_docs.cli2.commands.run_command.get_document", return_value=None)
-    mocker.patch("breba_docs.cli2.commands.run_command.run_analyzer", return_value=None)
+    mocker.patch("breba_docs.cli.commands.run_command.get_document", return_value=None)
+    mocker.patch("breba_docs.cli.commands.run_command.run_analyzer", return_value=None)
 
     # Create an instance of RunCommand and wrap it with CommandTester.
     command = RunCommand()
@@ -88,8 +88,8 @@ def test_run_command_in_current_directory(mocker, new_project_path):
     """
     Test the 'run' command when in current directory
     """
-    mocker.patch("breba_docs.cli2.commands.run_command.get_document", return_value=None)
-    mocker.patch("breba_docs.cli2.commands.run_command.run_analyzer", return_value=None)
+    mocker.patch("breba_docs.cli.commands.run_command.get_document", return_value=None)
+    mocker.patch("breba_docs.cli.commands.run_command.run_analyzer", return_value=None)
 
     os.chdir(new_project_path)
 

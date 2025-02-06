@@ -1,4 +1,3 @@
-# First we initialize the model we want to use.
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langchain_core.tools import tool

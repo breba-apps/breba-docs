@@ -68,6 +68,5 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-breba_docs = "breba_docs.cli:run"
-breba-docs = "breba_docs.cli:run"
-breba-docs2 = "breba_docs.cli2.app:run"
+breba-docs = "breba_docs.cli.app:run"
+breba_docs = "breba_docs.cli.app:run"

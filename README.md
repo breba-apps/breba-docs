@@ -23,7 +23,9 @@ To install and run breba-docs, run the following commands:
 
 ```bash
 pip install breba-docs
-breba-docs
+breba-docs new sample_proj
+cd sample_proj
+breba-docs run
 ```
 
 Then you will need to provide location of a documentation file. 
@@ -33,6 +35,27 @@ The software will then analyze the documentation and run the commands found in t
 inside a docker container with python installed.
 
 The AI will then provide feedback regarding how it was able to follow the instructions.
+
+## Features
+
+- **Create a New Project:**  
+  Run `breba-docs new` to set up a new project with:
+  - `data` directory
+  - `prompts` directory
+  - `config.yaml` file containing project and model configuration
+
+- **Run the Project:**  
+  Run `breba-docs run` to load and display your project's configuration.
+
+  When providing a path to file, that file will be copied to the `data` directory.
+
+  When using a github url, the repo will be cloned inside the `data` directory.
+
+  The software will then analyze the documentation and run the commands found in the documentation
+
+  Commands will be run inside a docker container with python installed.
+
+  Commands to fix the documentation will run against the documentation in the `data` directory.
 
 ## Contributing
 For contributing to the project, please refer to [Contribution Guide](docs/CONTRIBUTING.md). 

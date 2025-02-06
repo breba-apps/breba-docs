@@ -4,19 +4,21 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import yaml
-
 from cleo.commands.command import Command
 from cleo.helpers import argument
 from git import Repo
 
-from breba_docs.cli import run_analyzer
+from breba_docs.analyzer.document_analyzer import create_document_report
+from breba_docs.analyzer.reporter import Reporter
 from breba_docs.services.document import Document
+
 
 def is_valid_url(url):
     # TODO: check if md file
     parsed_url = urlparse(url)
 
     return all([parsed_url.scheme, parsed_url.netloc])
+
 
 def clean_data():
     data_dir = Path("data")
@@ -55,7 +57,16 @@ def get_document(project_root: Path, retries=3):
             return Document(file.read(), filepath)
     else:
         print(f"Not a valid URL or local file path. {retries - 1} retries remaining.")
-        return get_document(project_root,retries - 1)
+        return get_document(project_root, retries - 1)
+
+
+def run_analyzer(document: Document):
+    if document:
+        report = create_document_report(document)
+        Reporter(report).print_report()
+    else:
+        print("No document provided. Exiting...")
+
 
 class RunCommand(Command):
     """

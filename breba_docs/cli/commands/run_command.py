@@ -1,3 +1,4 @@
+import logging
 import os
 import shutil
 from pathlib import Path
@@ -68,6 +69,10 @@ def run_analyzer(document: Document):
         print("No document provided. Exiting...")
 
 
+def setup_log(project_root: Path):
+    logger = logging.getLogger()
+    logger.addHandler(logging.FileHandler(project_root / 'breba-docs.log'))
+
 class RunCommand(Command):
     """
     Run the breba-docs project.
@@ -94,7 +99,9 @@ class RunCommand(Command):
         else:
             project_root = Path(os.getcwd())
 
+        # Use the project dir as the staging area for everything.
         os.chdir(project_root)
+        setup_log(project_root)
 
         config_path = project_root / "config.yaml"
 
@@ -125,7 +132,7 @@ class RunCommand(Command):
         else:
             self.line(" <comment>No models configured.</comment>")
 
-        # TODO: Use named model
+        # TODO: Use named model, meaning the model name is provided in the config for running analyzer
         first_model_id = next(iter(config['models']))
         first_model = config['models'][first_model_id]
         # TODO: create a config singleton module

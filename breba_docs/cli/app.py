@@ -13,9 +13,10 @@ def setup_logging(debug=False):
     logging.basicConfig(
         level=level,
         format='%(asctime)s - %(levelname)s - %(message)s',
+
+        # We start out with a stdout handler, but later when project_root is know we will add a file handler
         handlers=[
             logging.StreamHandler(sys.stdout),
-            logging.FileHandler('breba-docs.log')
         ]
     )
 

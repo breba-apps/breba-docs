@@ -10,6 +10,8 @@ from collections.abc import Coroutine
 
 import pexpect
 
+from interactive_process import InteractiveProcess, TerminatedProcessError, ReadWriteError
+
 from breba_docs.agent.agent import Agent
 from breba_docs.container import container_setup
 from breba_docs.services.reports import CommandReport
@@ -47,9 +49,17 @@ def collect_output(process, command_end_marker: str):
 
 
 class LocalCommandExecutor(CommandExecutor):
+    @classmethod
+    @contextlib.contextmanager
+    def session(cls, agent: Agent):
+        with contextlib.closing(InteractiveProcess()) as process:
+            yield LocalCommandExecutor(process, agent)
 
-    def __init__(self, agent: Agent):
+    def __init__(self, process: InteractiveProcess, agent: Agent):
         self.agent = agent
+        self.process = process
+        # clear any messages that show up when starting the shell, they may swallow useful output if shell has issues
+        self.process.read_nonblocking(timeout=0.1)
 
     def get_input_text(self, text: str):
         # TODO: should probably throw this out of executor and handle input in the Executor caller
@@ -60,7 +70,50 @@ class LocalCommandExecutor(CommandExecutor):
             return instruction
 
     def execute_command(self, command):
-        raise Exception("Unimplemented")
+        # TODO: move this to InteractiveProcess, so that container command executor can echo the same way
+        # Echo the command first (shell-escaped)
+        escaped_command = shlex.quote(command)
+        echo_text = f"echo $ {escaped_command}\n"
+        self.process.send_command(echo_text)
+
+        command_id = str(uuid.uuid4())
+        command_end_marker = f"Completed {command_id}"
+        command = f"{command} && echo {command_end_marker} || echo {command_end_marker}"
+        self.process.send_command(command)
+
+        command_output = ""
+        new_output = ""
+        while True:
+            try:
+                new_output = self.process.read_nonblocking(timeout=2)
+                command_output += new_output
+                if command_end_marker in new_output:
+                    command_output = command_output.replace(f"{command_end_marker}\n", "")
+                    print("Breaking on end marker")
+                    return command_output
+            except TimeoutError:
+                print("Breaking due to timeout. Need to check if waiting for input.")
+                if new_output:
+                    input_text = self.get_input_text(new_output)
+                    new_output = ""  # reset new_output so that if timeout happens twice in a row, we don't get stuck
+
+                    # TODO: this does an implicit retry, when no input text is provided by get_input_text.
+                    #  maybe should have an explicit retry. The else clause is a continue, but should it be?
+                    if input_text:
+                        command_output += input_text
+                        self.process.send_command(input_text)
+
+                else:
+                    break
+            except (TerminatedProcessError, ReadWriteError) as exc:
+                print(f"End of process output: {exc}")
+                break
+            except Exception as exc:
+                print(exc)
+                break
+
+        return command_output
+
 
     def execute_commands_sync(self, commands: list[str]) -> list[CommandReport]:
         process = pexpect.spawn('/bin/bash', encoding='utf-8', env={"PS1": ""}, echo=False)

@@ -5,7 +5,9 @@ from langgraph.prebuilt import create_react_agent
 
 from breba_docs.agent.instruction_reader import get_instructions
 from breba_docs.agent.openai_agent import OpenAIAgent
+from breba_docs.container import new_container
 from breba_docs.services.command_executor import ContainerCommandExecutor
+from breba_docs.services.input_provider import AgentInputProvider
 from breba_docs.services.reports import CommandReport
 
 
@@ -47,8 +49,9 @@ if __name__ == "__main__":
 
     commands = ['python3 -m venv .venv', 'cd .venv',
                     'source bin/activote']
-    with ContainerCommandExecutor.executor_and_new_container(OpenAIAgent()) as command_executor:
-        with command_executor.session() as session:
+    input_provider = AgentInputProvider(OpenAIAgent())
+    with new_container() as container:
+        with ContainerCommandExecutor(input_provider).session() as session:
             agent = CommandAgent(session)
             for command in commands:
                 messages = agent.invoke(command)["messages"]

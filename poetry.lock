@@ -941,20 +941,6 @@ files = [
 ]
 
 [[package]]
-name = "pexpect"
-version = "4.9.0"
-description = "Pexpect allows easy control of interactive console applications."
-optional = false
-python-versions = "*"
-files = [
-    {file = "pexpect-4.9.0-py2.py3-none-any.whl", hash = "sha256:7236d1e080e4936be2dc3e326cec0af72acf9212a7e1d060210e70a47e253523"},
-    {file = "pexpect-4.9.0.tar.gz", hash = "sha256:ee7d41123f3c9911050ea2c2dac107568dc43b2d3b0c7557a33212c398ead30f"},
-]
-
-[package.dependencies]
-ptyprocess = ">=0.5"
-
-[[package]]
 name = "pluggy"
 version = "1.5.0"
 description = "plugin and hook calling mechanisms for python"
@@ -971,13 +957,13 @@ testing = ["pytest", "pytest-benchmark"]
 
 [[package]]
 name = "pty-server"
-version = "0.1.10"
+version = "0.2.1"
 description = ""
 optional = false
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "pty_server-0.1.10-py3-none-any.whl", hash = "sha256:fec6de63081882f137107b7fbc9919817dc9746c1b2a2fa4d086ef0f56c56ed3"},
-    {file = "pty_server-0.1.10.tar.gz", hash = "sha256:4da7803182bc7bc23a0d0e0084ab2f531db3f4c4405c79712054cf5205d31c05"},
+    {file = "pty_server-0.2.1-py3-none-any.whl", hash = "sha256:a1c17a264bb8d1084465832ea039b872a73dab6bbab2d0e4694bfc9075440214"},
+    {file = "pty_server-0.2.1.tar.gz", hash = "sha256:9470e7deeca921c1d02cfd0706af4bd185e309d356d3150acf71ac56434b1877"},
 ]
 
 [package.dependencies]
@@ -1903,4 +1889,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "fcef1484f71fc14bbe3b251c9834ae9d7b8b5ec0e830a56c41f1f911533cd9b6"
+content-hash = "87818f12a54a4f7dc21f108aa694a748f01513903a657973bc115cc9315346bd"

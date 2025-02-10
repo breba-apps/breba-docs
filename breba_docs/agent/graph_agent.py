@@ -10,8 +10,10 @@ from langgraph.graph import StateGraph, END
 from breba_docs.agent.agent import Agent
 from breba_docs.agent.instruction_reader import get_instructions
 from breba_docs.agent.openai_agent import OpenAIAgent
+from breba_docs.container import new_container
 from breba_docs.services.command_executor import ContainerCommandExecutor, LocalCommandExecutor
 from breba_docs.services.document import Document
+from breba_docs.services.input_provider import AgentInputProvider
 from breba_docs.services.reports import GoalReport, CommandReport, Goal
 
 
@@ -80,18 +82,28 @@ class GraphAgent:
     def process_more_goals(self, state: AgentState):
         return state['current_goal'] is not None
 
+
+    def _get_command_reports(self, commands: list[str]) -> list[CommandReport]:
+        modify_commands_reports = []
+        input_provider = AgentInputProvider(self.agent)
+        with LocalCommandExecutor(input_provider).session() as session:
+            for command in commands:
+                command_output = session.execute_command(command)
+                command_report = self.agent.analyze_output(command_output)
+                modify_commands_reports.append(command_report)
+        return modify_commands_reports
+
     # Use cases:
     #   If mutator commands made changes, then re-evaluate goal
     #   If no mutator commands could not succeed after retries, then we update report with Error and move to next goal
     #   If mutator commands made no changes or failed, then we want to refine the commands to fix them (retry count)
     def execute_mutator_commands(self, state: AgentState):
         current_goal = state['goal_reports'].pop()
-        command_executor = LocalCommandExecutor(self.agent)
         for command_report in current_goal.command_reports:
             if not command_report.success:
                 modify_commands = self.agent.fetch_modify_file_commands(self.doc.filepath, command_report)
-                modify_report = command_executor.execute_commands_sync(modify_commands)
-                current_goal.modify_command_reports += modify_report
+                command_reports = self._get_command_reports(modify_commands)
+                current_goal.modify_command_reports += command_reports
         return {'goal_reports': state['goal_reports'] + [current_goal]}
 
     def execute_commands(self, state: AgentState):
@@ -100,9 +112,9 @@ class GraphAgent:
         commands: list[str] = [command_report.command for command_report in current_goal.command_reports]
 
         command_reports = []
-        # TODO: ContainerCommandExecutor needs to take an interface that provides input to prompts
-        with ContainerCommandExecutor.executor_and_new_container(self.agent) as executor:
-            with executor.session() as session:
+        input_provider = AgentInputProvider(self.agent)
+        with new_container():
+            with ContainerCommandExecutor(input_provider).session() as session:
                 for command in commands:
                     response = session.execute_command(command)
                     command_report = self.agent.analyze_output(response)

@@ -81,9 +81,9 @@ class LocalCommandExecutor(CommandExecutor):
 
 
 class ContainerCommandExecutor(CommandExecutor):
-    def __init__(self, input_provider: InputProvider, socket_client: AsyncPtyClient | None = None):
+    def __init__(self, input_provider: InputProvider, pty_client: AsyncPtyClient | None = None):
         self.input_provider = input_provider
-        self.socket_client : AsyncPtyClient | None = socket_client
+        self.pty_client : AsyncPtyClient | None = pty_client
         # Used for async bridging
         self.loop = asyncio.new_event_loop()
 
@@ -112,7 +112,7 @@ class ContainerCommandExecutor(CommandExecutor):
             input_message = maybe_get_input(response)
 
             if input_message:
-                return await self.socket_client.send_input(input_message)
+                return await self.pty_client.send_input(input_message)
 
             return None
 
@@ -133,6 +133,8 @@ class ContainerCommandExecutor(CommandExecutor):
                 return ''.join(data_received)
             if response.timedout():
                 print(f"No new Data received in {timeout} seconds (attempt {retries}/{max_retries})")
+                # TODO: integration test should be able to catch when provide_input always returns None
+                #  because it is missing a return statement.
                 if await provide_input(data_received):
                     print(f"Provided input, restarting retries")
                     retries = 0
@@ -144,7 +146,7 @@ class ContainerCommandExecutor(CommandExecutor):
                     return ''.join(data_received)
 
     async def do_execute(self, command: str):
-        response = await self.socket_client.send_command(command)
+        response = await self.pty_client.send_command(command)
         if response:
             response_text = await self.read_response(response)
         else:
@@ -153,7 +155,7 @@ class ContainerCommandExecutor(CommandExecutor):
 
     def execute_command(self, command: str) -> str:
         # If not yet part of a session, execute command inside a session
-        if not self.socket_client:
+        if not self.pty_client:
             with self.session() as session:
                 return session.execute_command(command)
         else:
@@ -162,23 +164,23 @@ class ContainerCommandExecutor(CommandExecutor):
 
     async def execute_command_async(self, command: str) -> str:
         # If not yet part of a session, execute command in using session
-        if not self.socket_client:
+        if not self.pty_client:
             with self.session() as session:
                 return session.execute_command(command)
         else:
             return await self.do_execute(command)
 
     def _connect(self):
-        if not self.socket_client:
-            self.socket_client = AsyncPtyClient()
-            self._run_in_own_loop(self.socket_client.connect(max_wait_time=15))
+        if not self.pty_client:
+            self.pty_client = AsyncPtyClient()
+            self._run_in_own_loop(self.pty_client.connect(max_wait_time=15))
         else:
             raise Exception("Already connected")
 
     def _disconnect(self):
-        if self.socket_client:
-            self._run_in_own_loop(self.socket_client.disconnect())
-            self.socket_client = None
+        if self.pty_client:
+            self._run_in_own_loop(self.pty_client.disconnect())
+            self.pty_client = None
         else:
             raise Exception("Not connected")
 
@@ -193,8 +195,8 @@ class ContainerCommandExecutor(CommandExecutor):
     @contextlib.asynccontextmanager
     async def async_session(self):
         """Using the with executor.session will run all commands in the same session"""
-        self.socket_client = AsyncPtyClient()
-        await self.socket_client.connect(max_wait_time=15)
+        self.pty_client = AsyncPtyClient()
+        await self.pty_client.connect(max_wait_time=15)
         yield self
-        await self.socket_client.disconnect()
-        self.socket_client = None
+        await self.pty_client.disconnect()
+        self.pty_client = None

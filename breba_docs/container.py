@@ -1,3 +1,4 @@
+import contextlib
 import os
 import threading
 import time
@@ -91,6 +92,18 @@ def container_setup(debug=False, dev=False) -> Container:
         time.sleep(0.5)
 
     return container
+
+
+@contextlib.contextmanager
+def new_container(**kwargs):
+    execution_container = None
+    try:
+        execution_container = container_setup(**kwargs)
+        yield execution_container
+    finally:
+        if execution_container:
+            execution_container.stop()
+            execution_container.remove()
 
 
 def write_document_to_container(container: Container, document: str) -> None:

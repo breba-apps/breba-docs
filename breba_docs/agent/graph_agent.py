@@ -10,8 +10,10 @@ from langgraph.graph import StateGraph, END
 from breba_docs.agent.agent import Agent
 from breba_docs.agent.instruction_reader import get_instructions
 from breba_docs.agent.openai_agent import OpenAIAgent
+from breba_docs.container import new_container
 from breba_docs.services.command_executor import ContainerCommandExecutor, LocalCommandExecutor
 from breba_docs.services.document import Document
+from breba_docs.services.input_provider import AgentInputProvider
 from breba_docs.services.reports import GoalReport, CommandReport, Goal
 
 
@@ -83,7 +85,8 @@ class GraphAgent:
 
     def _get_command_reports(self, commands: list[str]) -> list[CommandReport]:
         modify_commands_reports = []
-        with LocalCommandExecutor.session(self.agent) as session:
+        input_provider = AgentInputProvider(self.agent)
+        with LocalCommandExecutor(input_provider).session() as session:
             for command in commands:
                 command_output = session.execute_command(command)
                 command_report = self.agent.analyze_output(command_output)
@@ -109,9 +112,9 @@ class GraphAgent:
         commands: list[str] = [command_report.command for command_report in current_goal.command_reports]
 
         command_reports = []
-        # TODO: ContainerCommandExecutor needs to take an interface that provides input to prompts
-        with ContainerCommandExecutor.executor_and_new_container(self.agent) as executor:
-            with executor.session() as session:
+        input_provider = AgentInputProvider(self.agent)
+        with new_container():
+            with ContainerCommandExecutor(input_provider).session() as session:
                 for command in commands:
                     response = session.execute_command(command)
                     command_report = self.agent.analyze_output(response)

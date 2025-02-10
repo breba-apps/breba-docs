@@ -1,19 +1,13 @@
 import abc
 import asyncio
 import contextlib
-import json
-import os
 import shlex
-import time
 import uuid
 from collections.abc import Coroutine
 
-import pexpect
-
 from interactive_process import InteractiveProcess, TerminatedProcessError, ReadWriteError
 
-from breba_docs.agent.agent import Agent
-from breba_docs.container import container_setup
+from breba_docs.services.input_provider import InputProvider
 from breba_docs.services.reports import CommandReport
 from pty_server import AsyncPtyClient
 from pty_server.async_client import PtyServerResponse
@@ -21,53 +15,24 @@ from pty_server.async_client import PtyServerResponse
 
 class CommandExecutor(abc.ABC):
     @abc.abstractmethod
-    def execute_commands_sync(self, command: [str]) -> list[CommandReport]:
-        pass
-
-    @abc.abstractmethod
     def execute_command(self, command: [str]) -> list[CommandReport]:
         pass
 
 
-def collect_output(process, command_end_marker: str):
-    command_output = ""
-    while True:
-        try:
-            time.sleep(0.5)
-            output = process.read_nonblocking(1024, timeout=2)
-            command_output += output
-            if command_end_marker in output:
-                print("Breaking on end marker")
-                break
-        except pexpect.exceptions.TIMEOUT:
-            print("Breaking due to timeout. Need to check if waiting for input.")
-            break
-        except pexpect.exceptions.EOF as e:
-            print("End of process output.")
-            break
-    return command_output
-
-
 class LocalCommandExecutor(CommandExecutor):
-    @classmethod
     @contextlib.contextmanager
-    def session(cls, agent: Agent):
+    def session(self):
         with contextlib.closing(InteractiveProcess()) as process:
-            yield LocalCommandExecutor(process, agent)
+            self.process = process
+            # clear any messages that show up when starting the shell, they may swallow useful output if shell has issues
+            # TODO: This doesn't do what is supposed. It should read data for 0.1 seconds, but instead it reads data
+            #  right away only waiting for 0.1 seconds if there is nothing to read.
+            self.process.read_nonblocking(timeout=0.1)
+            yield self
 
-    def __init__(self, process: InteractiveProcess, agent: Agent):
-        self.agent = agent
+    def __init__(self, input_provider: InputProvider, process: InteractiveProcess | None = None):
+        self.input_provider = input_provider
         self.process = process
-        # clear any messages that show up when starting the shell, they may swallow useful output if shell has issues
-        self.process.read_nonblocking(timeout=0.1)
-
-    def get_input_text(self, text: str):
-        # TODO: should probably throw this out of executor and handle input in the Executor caller
-        instruction = self.agent.provide_input(text)
-        if instruction == "breba-noop":
-            return None
-        elif instruction:
-            return instruction
 
     def execute_command(self, command):
         # TODO: move this to InteractiveProcess, so that container command executor can echo the same way
@@ -94,7 +59,7 @@ class LocalCommandExecutor(CommandExecutor):
             except TimeoutError:
                 print("Breaking due to timeout. Need to check if waiting for input.")
                 if new_output:
-                    input_text = self.get_input_text(new_output)
+                    input_text = self.input_provider.get_input(new_output)
                     new_output = ""  # reset new_output so that if timeout happens twice in a row, we don't get stuck
 
                     # TODO: this does an implicit retry, when no input text is provided by get_input_text.
@@ -115,44 +80,10 @@ class LocalCommandExecutor(CommandExecutor):
         return command_output
 
 
-    def execute_commands_sync(self, commands: list[str]) -> list[CommandReport]:
-        process = pexpect.spawn('/bin/bash', encoding='utf-8', env={"PS1": ""}, echo=False)
-
-        # clear any messages that show up when starting the shell
-        process.read_nonblocking(1024, timeout=0.5)
-        report = []
-        for command in commands:
-            # basically echo the command, but have to escape quotes first
-            escaped_command = shlex.quote(command)
-            process.sendline(f"echo {escaped_command}\n") # TODO: check if can use echo
-
-            command_id = str(uuid.uuid4())
-            command_end_marker = f"Completed {command_id}"
-            command = f"{command} && echo {command_end_marker}"
-            process.sendline(command)
-
-            command_output = ""
-            # TODO: need to separate flow between when command times out and when it has actually completed
-            while True:
-                new_output = collect_output(process, command_end_marker)
-                command_output += new_output
-                if new_output:
-                    input_text = self.get_input_text(new_output)
-                    if input_text:
-                        command_output += input_text + os.linesep
-                        process.sendline(input_text)
-                else:
-                    break
-            command_report = self.agent.analyze_output(command_output)
-            report.append(command_report)
-
-        return report
-
-
 class ContainerCommandExecutor(CommandExecutor):
-    def __init__(self, agent, socket_client=None):
-        self.agent = agent
-        self.socket_client = socket_client
+    def __init__(self, input_provider: InputProvider, socket_client: AsyncPtyClient | None = None):
+        self.input_provider = input_provider
+        self.socket_client : AsyncPtyClient | None = socket_client
         # Used for async bridging
         self.loop = asyncio.new_event_loop()
 
@@ -165,25 +96,6 @@ class ContainerCommandExecutor(CommandExecutor):
         asyncio.set_event_loop(self.loop)
         return self.loop.run_until_complete(fut)
 
-    @classmethod
-    @contextlib.contextmanager
-    def executor_and_new_container(cls, agent: Agent, **kwargs):
-        execution_container = None
-        try:
-            execution_container = container_setup(**kwargs)
-            yield ContainerCommandExecutor(agent)
-        finally:
-            if execution_container:
-                execution_container.stop()
-                execution_container.remove()
-
-    def get_input_message(self, text: str):
-        instruction = self.agent.provide_input(text)
-        if instruction == "breba-noop":
-            return None
-        elif instruction:
-            return json.dumps({"input": instruction})
-
     def create_provide_input(self):
         response_length = 0
 
@@ -192,7 +104,7 @@ class ContainerCommandExecutor(CommandExecutor):
             # Only try to get input if new data was received
             if response and len(response) != response_length:
                 response_length = len(response)
-                return self.get_input_message(response[-1])
+                return self.input_provider.get_input(response[-1])
 
             return None
 
@@ -200,7 +112,7 @@ class ContainerCommandExecutor(CommandExecutor):
             input_message = maybe_get_input(response)
 
             if input_message:
-                return await self.socket_client.send_message(input_message)
+                return await self.socket_client.send_input(input_message)
 
             return None
 
@@ -231,7 +143,6 @@ class ContainerCommandExecutor(CommandExecutor):
                     print("Max retries reached.")
                     return ''.join(data_received)
 
-
     async def do_execute(self, command: str):
         response = await self.socket_client.send_command(command)
         if response:
@@ -241,7 +152,7 @@ class ContainerCommandExecutor(CommandExecutor):
         return response_text
 
     def execute_command(self, command: str) -> str:
-        # If not yet part of a session, execute command in using session
+        # If not yet part of a session, execute command inside a session
         if not self.socket_client:
             with self.session() as session:
                 return session.execute_command(command)
@@ -257,40 +168,30 @@ class ContainerCommandExecutor(CommandExecutor):
         else:
             return await self.do_execute(command)
 
-    # TODO: Get rid of this code, it is not being used anywhere
-    def execute_commands_sync(self, commands) -> list[CommandReport]:
-        command_reports = []
-        execution_container = None
-        try:
-            execution_container = container_setup()
-            time.sleep(0.5)
+    def _connect(self):
+        if not self.socket_client:
+            self.socket_client = AsyncPtyClient()
+            self._run_in_own_loop(self.socket_client.connect(max_wait_time=15))
+        else:
+            raise Exception("Already connected")
 
-            with self.session() as session:
-                for command in commands:
-                    response = session.execute_command(command)
-                    # TODO: Pass the command to analyze output, otherwise it doesn't know what command we were even trying to execute
-                    command_report = self.agent.analyze_output(response)
-                    command_reports.append(command_report)
-                self.socket_client = None
-            return command_reports
-
-        finally:
-            if execution_container:
-                execution_container.stop()
-                execution_container.remove()
+    def _disconnect(self):
+        if self.socket_client:
+            self._run_in_own_loop(self.socket_client.disconnect())
+            self.socket_client = None
+        else:
+            raise Exception("Not connected")
 
     @contextlib.contextmanager
     def session(self):
-        self.socket_client = AsyncPtyClient()
-        self._run_in_own_loop(self.socket_client.connect(max_wait_time=15))
+        self._connect()
         try:
             yield self
         finally:
-            self._run_in_own_loop(self.socket_client.disconnect())
-            self.socket_client = None
+            self._disconnect()
 
     @contextlib.asynccontextmanager
-    async def async_session(self) -> CommandExecutor:
+    async def async_session(self):
         """Using the with executor.session will run all commands in the same session"""
         self.socket_client = AsyncPtyClient()
         await self.socket_client.connect(max_wait_time=15)

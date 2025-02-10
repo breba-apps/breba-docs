@@ -1,10 +1,54 @@
 import os
 from pathlib import Path
 
+import docker
 import yaml
 
 from cleo.commands.command import Command
 from cleo.helpers import argument
+from docker.models.images import Image
+
+
+def create_project_structure(project_root):
+    data_dir = project_root / "data"
+    prompts_dir = project_root / "prompts"
+    data_dir.mkdir(parents=False, exist_ok=False)
+    prompts_dir.mkdir(parents=False, exist_ok=False)
+
+
+def create_docker_image(name, command):
+    command.line("Creating docker image...")
+    client = docker.from_env()
+
+    # Step 1: Run a container from the python:3 image to perform the setup.
+    setup_command = (
+        "bash -c '"
+        "python -m venv /usr/src/.venv "
+        "&& . /usr/src/.venv/bin/activate "
+        "&& pip install pty-server'"
+    )
+
+    command.line("Starting a sample container...")
+    setup_container = client.containers.run(
+        image="python:3",
+        command=setup_command,
+        working_dir="/usr/src",
+        detach=True,
+        tty=True
+    )
+
+    setup_container.wait()
+    command.line("Creating a new image...")
+
+    cmd_instruction = (
+        'CMD ["/bin/bash", "-c", "VIRTUAL_ENV_DISABLE_PROMPT=1 . .venv/bin/activate && pty-server"]'
+    )
+    new_image: Image = setup_container.commit(
+        repository=name,
+        tag="latest",
+        changes=[cmd_instruction]
+    )
+    command.line(f"Docker image created.{new_image.tags}")
 
 
 class NewCommand(Command):
@@ -25,13 +69,6 @@ class NewCommand(Command):
         )
     ]
 
-    def create_project_structure(self, project_root):
-        data_dir = project_root / "data"
-        prompts_dir = project_root / "prompts"
-        data_dir.mkdir(parents=False, exist_ok=False)
-        prompts_dir.mkdir(parents=False, exist_ok=False)
-
-
     def handle(self):
         # Retrieve project name from option or prompt for it.
         project_name = self.argument("name")
@@ -41,19 +78,28 @@ class NewCommand(Command):
         project_root = Path.cwd() / project_name
 
         try:
-            os.makedirs(project_root, exist_ok=False)
-            self.create_project_structure(project_root)
-
             # Interactively ask for model configuration.
             self.line("Configure your model:")
             # Currently, the only available model type is "openai".
-            model_type = self.ask("Model type (available: openai):", default="openai")
+            model_type = self.choice("Model type:", ["openai"], default=0)
             model_name = self.ask("Model name:")
             api_key = self.ask("API key:")
-            container_image = self.ask("Container image for executing commands:")
+            create_docker = self.confirm(
+                "Do you need to create a docker image for command execution?",
+                default=True
+            )
+
+            if create_docker:
+                container_image = self.ask("How would you like to name the new docker image:")
+                create_docker_image(container_image, self)
+            else:
+                container_image = self.ask("What container image would you like to use for executing commands:")
 
             # Generate a model_id using the combination of type, name, and a counter (starting at 1).
             model_id = f"{model_type}-{model_name}-1"
+
+            os.makedirs(project_root, exist_ok=False)
+            create_project_structure(project_root)
 
             # Build the configuration data.
             config_data = {

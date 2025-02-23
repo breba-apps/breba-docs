@@ -423,13 +423,13 @@ files = [
 
 [[package]]
 name = "interactive-process"
-version = "0.2.5"
+version = "0.3.0"
 description = ""
 optional = false
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "interactive_process-0.2.5-py3-none-any.whl", hash = "sha256:290e72fefc33a3638efc879fcbf250302adfc284398d68b7406a2d1f0971b6a7"},
-    {file = "interactive_process-0.2.5.tar.gz", hash = "sha256:347ecc4c081da7a5bb8b408bab40364e2584c8e7b82a02bf0aaf6be08a98144b"},
+    {file = "interactive_process-0.3.0-py3-none-any.whl", hash = "sha256:501c2985a465ad25ce72bbaf184ef6b87b18a837054c55a85d3e40e12678bba4"},
+    {file = "interactive_process-0.3.0.tar.gz", hash = "sha256:442b701a1038befefd1abb94dd3d306aaf3066a9ec869176530fd6cfa085f867"},
 ]
 
 [package.dependencies]
@@ -957,17 +957,17 @@ testing = ["pytest", "pytest-benchmark"]
 
 [[package]]
 name = "pty-server"
-version = "0.2.1"
+version = "0.3.0"
 description = ""
 optional = false
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "pty_server-0.2.1-py3-none-any.whl", hash = "sha256:a1c17a264bb8d1084465832ea039b872a73dab6bbab2d0e4694bfc9075440214"},
-    {file = "pty_server-0.2.1.tar.gz", hash = "sha256:9470e7deeca921c1d02cfd0706af4bd185e309d356d3150acf71ac56434b1877"},
+    {file = "pty_server-0.3.0-py3-none-any.whl", hash = "sha256:c2c35938d71391dda4c6e7f1d30a8fef19df07be81b0a9e6071ea3f82d442b37"},
+    {file = "pty_server-0.3.0.tar.gz", hash = "sha256:62aee39f5dc2020c23c431706f60d62fdd154342ecaad98cd2498e795e5b8a57"},
 ]
 
 [package.dependencies]
-interactive-process = ">=0.2.5,<0.3.0"
+interactive-process = ">=0.3.0,<0.4.0"
 websockets = ">=14.1,<15.0"
 
 [[package]]
@@ -1889,4 +1889,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "87818f12a54a4f7dc21f108aa694a748f01513903a657973bc115cc9315346bd"
+content-hash = "c5f811b2bf84c5deb6023aa987de288820e8816ab757845cecb08870cbd97e83"

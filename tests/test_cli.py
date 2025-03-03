@@ -20,7 +20,7 @@ def temp_project(tmp_path, monkeypatch):
 @pytest.fixture
 def new_project_path(temp_project):
     project_name = "TestProject"
-    inputs = "openai\ngpt-4\ndummy_api_key\nbreba-image\n"
+    inputs = "openai\ngpt-4\ndummy_api_key\nNo\nbreba-image\n"
 
     new_command_tester = CommandTester(NewCommand())
     exit_code = new_command_tester.execute(args=project_name, inputs=inputs, interactive=True)

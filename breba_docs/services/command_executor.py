@@ -1,7 +1,6 @@
 import abc
 import asyncio
 import contextlib
-import shlex
 import uuid
 from collections.abc import Coroutine
 
@@ -22,12 +21,10 @@ class CommandExecutor(abc.ABC):
 class LocalCommandExecutor(CommandExecutor):
     @contextlib.contextmanager
     def session(self):
-        with contextlib.closing(InteractiveProcess()) as process:
+        with contextlib.closing(InteractiveProcess.with_random_prompt()) as process:
             self.process = process
             # clear any messages that show up when starting the shell, they may swallow useful output if shell has issues
-            # TODO: This doesn't do what is supposed. It should read data for 0.1 seconds, but instead it reads data
-            #  right away only waiting for 0.1 seconds if there is nothing to read.
-            self.process.read_nonblocking(timeout=0.1)
+            self.process.flush_output()
             yield self
 
     def __init__(self, input_provider: InputProvider, process: InteractiveProcess | None = None):
@@ -35,16 +32,9 @@ class LocalCommandExecutor(CommandExecutor):
         self.process = process
 
     def execute_command(self, command):
-        # TODO: move this to InteractiveProcess, so that container command executor can echo the same way
-        # Echo the command first (shell-escaped)
-        escaped_command = shlex.quote(command)
-        echo_text = f"echo $ {escaped_command}\n"
-        self.process.send_command(echo_text)
-
         command_id = str(uuid.uuid4())
         command_end_marker = f"Completed {command_id}"
-        command = f"{command} && echo {command_end_marker} || echo {command_end_marker}"
-        self.process.send_command(command)
+        self.process.send_command(command, end_marker=command_end_marker)
 
         command_output = ""
         new_output = ""
@@ -66,9 +56,10 @@ class LocalCommandExecutor(CommandExecutor):
                     #  maybe should have an explicit retry. The else clause is a continue, but should it be?
                     if input_text:
                         command_output += input_text
-                        self.process.send_command(input_text)
+                        self.process.send_input(input_text)
 
                 else:
+                    print("Timed out, but no new output")
                     break
             except (TerminatedProcessError, ReadWriteError) as exc:
                 print(f"End of process output: {exc}")

@@ -1,5 +1,3 @@
-import time
-
 import pytest
 
 from breba_docs.container import container_setup

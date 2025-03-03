@@ -37,7 +37,7 @@ def get_document(project_root: Path, retries=3):
     if retries == 0:
         return None
 
-    location = input(f"Provide URL to git repo or an path to file:")
+    location = input(f"Provide URL to git repo or a path to file:")
 
     if Path(location).is_file():
         clean_data()

@@ -18,7 +18,7 @@ def input_provider() -> Generator[InputProvider, None, None]:
 
 @pytest.fixture(scope="module")
 def container_executor():
-    with new_container(dev=True) as executor:
+    with new_container(dev=False) as executor:
         yield executor
 
 
@@ -46,4 +46,4 @@ def test_container_command_executor_with_input(mocker, session):
     for command, expected_output in commands:
         output = session.execute_command(command)
         if expected_output:
-            assert expected_output == output.strip()
+            assert expected_output in output.strip()

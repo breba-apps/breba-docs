@@ -23,7 +23,7 @@ def test_session(input_provider: InputProvider):
     with LocalCommandExecutor(input_provider).session() as executor:
         output = executor.execute_command("""read -p "Please enter today's date (YYYY-MM-DD): " user_date""")
         assert """$ read -p "Please enter today\'s date (YYYY-MM-DD): " user_date\n""" in output
-        assert "Please enter today\'s date (YYYY-MM-DD): 2023-10-05" in output
+        assert "\nPlease enter today\'s date (YYYY-MM-DD): 2023-10-05" in output
         assert not re.search(r"Completed .*", output)
         output = executor.execute_command("echo Hello there $user_date")
         assert "$ echo Hello there $user_date\nHello there 2023-10-05" in output

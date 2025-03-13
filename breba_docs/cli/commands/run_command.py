@@ -69,6 +69,7 @@ def run_analyzer(document: Document):
         print("No document provided. Exiting...")
 
 
+# TODO: logger is not used, and not setup properly
 def setup_log(project_root: Path):
     logger = logging.getLogger()
     logger.addHandler(logging.FileHandler(project_root / 'breba-docs.log'))

@@ -33,13 +33,11 @@ def should_call_tool(state: State) -> bool:
 class BuildAgent:
 
     def __init__(self):
-
-
         # Initialize the state
         self.initial_state: State = {"messages": []}
 
         # Initialize model with tools
-        model = ChatOpenAI(model="gpt-4.5-preview", temperature=0)
+        model = ChatOpenAI(model="gpt-4o", temperature=0)
         self.model = model.bind_tools([ask_human])
 
         # Create a state graph

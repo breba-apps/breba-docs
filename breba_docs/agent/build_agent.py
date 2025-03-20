@@ -58,7 +58,10 @@ class BuildAgent:
     def extract_prompt(self, state: State) -> State:
         message = state["messages"][-1].content
         split_message = message.split("::final prompt result::")
-        return {"prompt": split_message[1]}
+        prompt = ""
+        if len(split_message) > 1:
+            prompt = split_message[1]
+        return {"prompt": prompt}
 
     def agent(self, state: State) -> State:
         response = self.model.invoke(state["messages"])

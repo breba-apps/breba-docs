@@ -46,7 +46,7 @@ class BuildAgent:
             message = state["messages"][-1].content
             split_message = message.split("::final prompt result::")
 
-            if len(split_message) > 1:
+            if len(split_message) > 1 and split_message[1]:
                 return True
         return False
 

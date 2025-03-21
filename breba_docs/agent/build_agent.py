@@ -72,22 +72,22 @@ class BuildAgent:
             file.write(self.app.get_graph().draw_mermaid_png())
 
     def stream(self, user_input: str):
+        prompt = get_instructions("build_agent_user_prompt", prompt=user_input)
         for event in self.app.stream({
             "messages": [{"role": "system", "content": self.system_prompt},
-                         {"role": "user", "content": user_input}]
+                         {"role": "user", "content": prompt}]
         },
                 stream_mode="values"
         ):
             event['messages'][-1].pretty_print()
             self.final_state = event
 
-    def invoke(self, user_input: str):
+    def invoke(self, user_input: str) -> State:
         prompt = get_instructions("build_agent_user_prompt", prompt=user_input)
         return self.app.invoke({
             "messages": [{"role": "system", "content": self.system_prompt},
                          {"role": "user", "content": prompt}]
-        }
-        )
+        })
 
 
 if __name__ == "__main__":

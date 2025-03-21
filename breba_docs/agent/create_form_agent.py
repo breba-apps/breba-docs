@@ -56,11 +56,12 @@ class CreateFormAgent:
         return Command(goto=goto, update={"next": goto})
 
     def builder_node(self, state: State) -> Command[Literal["supervisor"]]:
-        # result = self.prompt_builder.invoke(state["messages"][-1].content)
+        result = self.prompt_builder.invoke(state["messages"][-1].content)
         return Command(
             update={
                 "messages": [
-                    HumanMessage(content="Here is the better prompt: We are creating a website for generating forms. You will need to produce HTML for entering an email, a phone number and a t-shirt size.", name="prompt_builder")
+                    HumanMessage(content="The following message is from prompt_builder", name="prompt_builder"),
+                    HumanMessage(content=result["prompt"], name="prompt_builder")
                 ]
             },
             goto="supervisor"
@@ -110,4 +111,4 @@ if __name__ == "__main__":
     agent = CreateFormAgent()
 
     agent.stream(
-        "We are creating a website for generating forms. You will need to produce HTML for entering an email, a phone number and a t-shirt size.")
+        "We are creating a website for generating forms. You will need to produce HTML for a name, phone number, and a t-shirt size.")

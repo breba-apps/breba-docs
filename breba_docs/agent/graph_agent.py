@@ -75,7 +75,7 @@ class GraphAgent:
         #  is to see if any of the modify commands succeeded. In future should engineer smarter way
         return any(modify_command_report.success for modify_command_report in current_goal_report.modify_command_reports)
 
-    def commands_succeeded(self, state: AgentState) -> Literal["identify_commands", "execute_mutator_commands"] | END:
+    def commands_succeeded(self, state: AgentState) -> Literal["identify_commands", "execute_mutator_commands", END] :
         current_goal = state['goal_reports'][-1]
         return all(command_report.success for command_report in current_goal.command_reports)
 

@@ -1,22 +1,21 @@
-from typing import NotRequired
+from typing import TypedDict
 
 from dotenv import load_dotenv
+from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
-from langgraph.graph import MessagesState
-from langgraph.prebuilt import create_react_agent
 
 from breba_docs.agent.instruction_reader import get_instructions
 
 
 # Define the structure of our state
-class State(MessagesState):
-    prompt: NotRequired[str]
+class State(TypedDict):
+    content: str
 
 
 @tool
-def get_weather(location: str):
-    """Gets current location of the user"""
+def web_search_preview(location: str):
+    """Process web search results"""
     return "Hot and Sunny every day"
 
 
@@ -27,34 +26,29 @@ class GenerationAgent:
 
         llm = ChatOpenAI(model="gpt-4o", temperature=0)
 
-        # tool = {"type": "web_search_preview"}
-        # model = llm.bind_tools([tool])
-
-        self.agent_executor = create_react_agent(llm, [get_weather])
+        self.model = llm.bind_tools([{"type": "web_search_preview"}])
         self.final_state = None
 
     def stream(self, user_input: str):
-        for event in self.agent_executor.stream({
-            "messages": [{"role": "system", "content": self.system_prompt},
-                         {"role": "user", "content": user_input}]
-        },
-                stream_mode="values"
-        ):
-            event['messages'][-1].pretty_print()
-            self.final_state = event
+        return self.model.invoke([
+            SystemMessage(content=self.system_prompt),
+            HumanMessage(content=user_input),
+        ]
+        )
 
     def invoke(self, user_input: str) -> State:
-        prompt = get_instructions("build_agent_user_prompt", prompt=user_input)
-        return self.agent_executor.invoke({
-            "messages": [{"role": "system", "content": self.system_prompt},
-                         {"role": "user", "content": prompt}]
-        })
+        response = self.model.invoke([
+            SystemMessage(content=self.system_prompt),
+            HumanMessage(content=user_input),
+        ])
+        return {"content": response.content[0]["text"]}
 
 
 if __name__ == "__main__":
     load_dotenv()
     agent = GenerationAgent()
 
-    agent.stream(
-        "This website will show weather forecast for Stevens Pass.")
-    print(agent.final_state["prompt"])
+    response = agent.invoke(
+        "This website will show current weather for Stevens Pass.")
+
+    print(response)

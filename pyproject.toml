@@ -35,6 +35,7 @@ interactive-process = "^0.3.0"
 pty-server = "^0.3.0"
 cleo = "^2.1.0"
 langchain-community = "^0.3.20"
+beautifulsoup4 = "^4.13.3"
 
 
 [tool.poetry.group.test.dependencies]
@@ -54,6 +55,7 @@ markers = [
 ]
 # log_cli = "True"
 # log_cli_level = "INFO"
+
 
 
 

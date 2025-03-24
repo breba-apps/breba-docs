@@ -1,22 +1,12 @@
-from typing import TypedDict
+from typing import TypedDict, Generator
 
 from dotenv import load_dotenv
-from langchain_core.messages import SystemMessage, HumanMessage
-from langchain_core.tools import tool
+from langchain_community.tools import TavilySearchResults
 from langchain_openai import ChatOpenAI
+from langgraph.graph import MessagesState
+from langgraph.prebuilt import create_react_agent
 
 from breba_docs.agent.instruction_reader import get_instructions
-
-
-# Define the structure of our state
-class State(TypedDict):
-    content: str
-
-
-@tool
-def web_search_preview(location: str):
-    """Process web search results"""
-    return "Hot and Sunny every day"
 
 
 class GenerationAgent:
@@ -24,31 +14,40 @@ class GenerationAgent:
     def __init__(self):
         self.system_prompt = get_instructions("generation_agent")
 
-        llm = ChatOpenAI(model="gpt-4o", temperature=0)
-
-        self.model = llm.bind_tools([{"type": "web_search_preview"}])
-        self.final_state = None
-
-    def stream(self, user_input: str):
-        return self.model.invoke([
-            SystemMessage(content=self.system_prompt),
-            HumanMessage(content=user_input),
-        ]
+        search_tool = TavilySearchResults(
+            max_results=5,
+            include_answer=True,
+            include_raw_content=True,
+            include_images=True,
         )
 
-    def invoke(self, user_input: str) -> State:
-        response = self.model.invoke([
-            SystemMessage(content=self.system_prompt),
-            HumanMessage(content=user_input),
-        ])
-        return {"content": response.content[0]["text"]}
+        llm = ChatOpenAI(model="gpt-4o", temperature=0)
+        self.model = llm.bind_tools([search_tool])
+        self.agent = create_react_agent(llm, tools=[search_tool])
+
+    def stream(self, user_input: str) -> Generator[MessagesState, None, None]:
+        inputs = {"messages": [
+            ("system", self.system_prompt),
+            ("user", user_input),
+        ]}
+        stream = self.agent.stream(inputs, stream_mode="values")
+        for event in stream:
+            yield event["messages"][-1]
+
+    def invoke(self, user_input: str) -> MessagesState:
+        inputs = {"messages": [
+            ("system", self.system_prompt),
+            ("user", user_input),
+        ]}
+        response = self.agent.invoke(inputs)
+        return response
 
 
 if __name__ == "__main__":
     load_dotenv()
     agent = GenerationAgent()
 
-    response = agent.invoke(
-        "This website will show current weather for Stevens Pass.")
-
-    print(response)
+    agent_state = agent.invoke(
+        "This website will show current weather for Stevens Pass. Use weather.gov and stevenspass.com for looking up information")
+    agent_state["messages"][-1].pretty_print()
+    # agent.stream( "This website will show current weather for Stevens Pass. Use weather.gov and stevenspass.com for looking up information")

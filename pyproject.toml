@@ -34,6 +34,7 @@ pytest-asyncio = "^0.25.0"
 interactive-process = "^0.3.0"
 pty-server = "^0.3.0"
 cleo = "^2.1.0"
+langchain-community = "^0.3.20"
 
 
 [tool.poetry.group.test.dependencies]
@@ -53,6 +54,8 @@ markers = [
 ]
 # log_cli = "True"
 # log_cli_level = "INFO"
+
+
 
 
 

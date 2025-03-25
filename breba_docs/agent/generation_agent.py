@@ -1,4 +1,4 @@
-from typing import TypedDict, Generator
+from typing import Generator
 
 from dotenv import load_dotenv
 from langchain_community.tools import TavilySearchResults

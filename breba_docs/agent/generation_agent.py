@@ -2,6 +2,7 @@ from typing import Generator
 
 from dotenv import load_dotenv
 from langchain_community.tools import TavilySearchResults
+from langchain_core.messages import BaseMessage
 from langchain_openai import ChatOpenAI
 from langgraph.graph import MessagesState
 from langgraph.prebuilt import create_react_agent
@@ -25,7 +26,7 @@ class GenerationAgent:
         self.model = llm.bind_tools([search_tool])
         self.agent = create_react_agent(llm, tools=[search_tool])
 
-    def stream(self, user_input: str) -> Generator[MessagesState, None, None]:
+    def stream(self, user_input: str) -> Generator[BaseMessage, None, None]:
         inputs = {"messages": [
             ("system", self.system_prompt),
             ("user", user_input),
